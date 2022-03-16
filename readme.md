@@ -1,3 +1,3 @@
-# ble-ftms
+# ble-helper
 
-Will provide functionality to connect to  Bluetooth FTMS devices, stream updates and allow control.
+Will provide functionality to help connecting to Bluetooth devices

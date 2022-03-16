@@ -1,11 +1,33 @@
 {
-  "name": "ble-ftms",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC"
+    "name": "ble-helper",
+    "version": "1.0.0",
+    "description": "Provides functionality to help connecting to Bluetooth devices",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "build:watch": "tsc --watch",
+        "lint": "eslint . --ext .ts,.d.ts,.js",
+        "lint:fix": "eslint . --ext .ts,.d.ts,.js --fix"
+    },
+    "author": "Giles Roadnight",
+    "license": "ISC",
+    "devDependencies": {
+        "@types/web-bluetooth": "^0.0.13",
+        "@typescript-eslint/eslint-plugin": "^4.20.0",
+        "@typescript-eslint/parser": "^4.20.0",
+        "eslint": "^7.19.0",
+        "eslint-config-prettier": "^7.2.0",
+        "eslint-config-standard": "^16.0.2",
+        "eslint-plugin-import": "^2.22.1",
+        "eslint-plugin-node": "^11.1.0",
+        "eslint-plugin-prettier": "^3.3.1",
+        "eslint-plugin-promise": "^4.2.1",
+        "prettier": "^2.2.1",
+        "rxjs": "^7.5.5",
+        "typescript": "~4.5"
+    },
+    "peerDependencies": {
+        "rxjs": "^7.5.5"
+    }
 }
