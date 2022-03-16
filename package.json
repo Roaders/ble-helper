@@ -29,5 +29,8 @@
     },
     "peerDependencies": {
         "rxjs": "^7.5.5"
+    },
+    "dependencies": {
+        "@morgan-stanley/needle": "^0.3.13"
     }
 }

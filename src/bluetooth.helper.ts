@@ -1,9 +1,11 @@
+import { Injectable } from '@morgan-stanley/needle';
 import { from, interval, Observable } from 'rxjs';
 import { catchError, map, switchMap, take, tap } from 'rxjs/operators';
-import { ILogger } from './contracts';
+import { Logger } from './logger';
 
+@Injectable()
 export class BluetoothHelper {
-    constructor(private logger: ILogger) {}
+    constructor(private logger: Logger) {}
 
     public requestDevice(
         services: [BluetoothServiceUUID, ...BluetoothServiceUUID[]],

@@ -1,6 +1,8 @@
-import { ILogger, Log, LogLevel } from './contracts';
+import { Injectable } from '@morgan-stanley/needle';
+import { Log, LogLevel } from './contracts';
 
-export class Logger implements ILogger {
+@Injectable()
+export class Logger {
     private readonly _logs: Log[] = [];
 
     public log(level: keyof typeof LogLevel, message: string, ...meta: unknown[]): void {
