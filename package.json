@@ -8,7 +8,8 @@
         "build": "tsc",
         "build:watch": "tsc --watch",
         "lint": "eslint . --ext .ts,.d.ts,.js",
-        "lint:fix": "eslint . --ext .ts,.d.ts,.js --fix"
+        "lint:fix": "eslint . --ext .ts,.d.ts,.js --fix",
+        "prepublishOnly": "npm run build && npm run lint"
     },
     "author": "Giles Roadnight",
     "license": "ISC",
