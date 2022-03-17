@@ -1,0 +1,58 @@
+{
+    "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+    "cli": {
+        "analytics": false
+    },
+    "version": 1,
+    "newProjectRoot": "projects",
+    "projects": {
+        "test-harness": {
+            "projectType": "application",
+            "schematics": {
+                "@schematics/angular:application": {
+                    "strict": true
+                }
+            },
+            "root": "",
+            "sourceRoot": ".",
+            "prefix": "app",
+            "architect": {
+                "build": {
+                    "builder": "@angular-devkit/build-angular:browser",
+                    "options": {
+                        "outputPath": "dist/test-harness",
+                        "index": "test-harness/index.html",
+                        "main": "test-harness/main.ts",
+                        "tsConfig": "test-harness/tsconfig.json",
+                        "scripts": [],
+                        "styles": [
+                            "node_modules/bootstrap/scss/bootstrap.scss",
+                            "test-harness/app/styles.scss"
+                        ]
+                    },
+                    "configurations": {
+                        "development": {
+                            "buildOptimizer": false,
+                            "optimization": false,
+                            "vendorChunk": true,
+                            "extractLicenses": false,
+                            "sourceMap": true,
+                            "namedChunks": true
+                        }
+                    },
+                    "defaultConfiguration": "production"
+                },
+                "serve": {
+                    "builder": "@angular-devkit/build-angular:dev-server",
+                    "configurations": {
+                        "development": {
+                            "browserTarget": "test-harness:build:development"
+                        }
+                    },
+                    "defaultConfiguration": "development"
+                }
+            }
+        }
+    },
+    "defaultProject": "test-harness"
+}

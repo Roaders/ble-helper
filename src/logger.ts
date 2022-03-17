@@ -1,14 +1,10 @@
 import { Injectable } from '@morgan-stanley/needle';
-import { Log, LogLevel } from './contracts';
+import { LogLevel } from './contracts';
 
 @Injectable()
 export class Logger {
-    private readonly _logs: Log[] = [];
-
     public log(level: keyof typeof LogLevel, message: string, ...meta: unknown[]): void {
         console.log(`[${level.toUpperCase()}] ${message}`, ...meta);
-
-        this._logs.push({ level: LogLevel[level], message, meta });
     }
 
     public fatal(message: string, ...meta: unknown[]): void {

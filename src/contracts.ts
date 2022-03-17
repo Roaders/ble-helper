@@ -6,9 +6,3 @@ export enum LogLevel {
     debug = 1,
     trace = 0,
 }
-
-export type Log = {
-    level: LogLevel;
-    message: string;
-    meta: unknown[];
-};

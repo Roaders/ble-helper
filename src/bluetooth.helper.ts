@@ -1,6 +1,6 @@
 import { Injectable } from '@morgan-stanley/needle';
-import { from, interval, Observable } from 'rxjs';
-import { catchError, map, switchMap, take, tap } from 'rxjs/operators';
+import { from, Observable } from 'rxjs';
+import { catchError, map, mergeMap, switchMap, tap } from 'rxjs/operators';
 import { Logger } from './logger';
 
 @Injectable()
@@ -10,96 +10,44 @@ export class BluetoothHelper {
     public requestDevice(
         services: [BluetoothServiceUUID, ...BluetoothServiceUUID[]],
         maxRetries = 5,
-        retries = 0,
     ): Observable<BluetoothDevice> {
         this.logger.info('Requesting Device...', services);
-        const requestStream = from(navigator.bluetooth.requestDevice({ filters: [{ services }] })).pipe(
-            tap((device) => this.logger.info(`Device Selected: ${device.name}`, device)),
-            catchError((err) => {
-                if (retries >= maxRetries || err.name === 'NotFoundError') {
-                    throw err;
-                } else {
-                    this.logger.error(`Error selecting device`, err);
-                    return this.requestDevice(services, maxRetries, retries + 1);
-                }
-            }),
-        );
-
-        return requestStream;
+        return this.requestDeviceImpl(services, maxRetries);
     }
 
-    public connectServer(device: BluetoothDevice, maxRetries = 5, retries = 0): Observable<BluetoothRemoteGATTServer> {
-        if (device.gatt == null) {
-            throw new Error(`gatt is not defined on device`);
-        }
-
-        const server = device.gatt;
-
-        return new Observable<BluetoothRemoteGATTServer>((observer) => {
-            let unsubscribed = false;
-            this.logger.info(`Connecting to Server...`);
-
-            server.connect().then(
-                () => {
-                    if (unsubscribed) {
-                        server.disconnect();
-                    } else {
-                        this.logger.info(`Server Connected...`, server);
-                        observer.next(server);
-                    }
-                },
-                (error) => observer.error(error),
-            );
-
-            return {
-                unsubscribe: () => {
-                    unsubscribed = true;
-                    if (server.connected) {
-                        this.logger.info(`connectServer.unsubscribe: Disconnecting from server...`, server);
-                        server.disconnect();
-                    } else {
-                        this.logger.info(`connectServer.unsubscribe: Server already disconnected`, server);
-                    }
-                },
-            };
-        }).pipe(
-            catchError((err) => {
-                if (retries < maxRetries) {
-                    this.logger.error(`Error connecting to server`, err);
-                    return this.connectServer(device, maxRetries, retries + 1);
-                } else {
-                    throw err;
-                }
-            }),
-        );
+    public connectServer(device: BluetoothDevice, maxRetries = 5): Observable<BluetoothRemoteGATTServer> {
+        return this.connectServerImpl(device, maxRetries);
     }
 
     public getService(
         server: BluetoothRemoteGATTServer,
         service: BluetoothServiceUUID,
         maxRetries = 5,
-        retries = 0,
     ): Observable<BluetoothRemoteGATTService> {
-        this.logger.info(`Getting Service '${service}'...`, server);
+        return this.getServiceImpl(server, service, maxRetries).pipe(map((services) => services[0]));
+    }
 
-        return from(server.getPrimaryService(service)).pipe(
-            tap((service) => this.logger.info(`Service Connected`, service)),
-            catchError((err) => {
-                this.logger.error(`Error getting service '${service}' (${retries})`, err);
+    public getServices(server: BluetoothRemoteGATTServer, maxRetries = 5): Observable<BluetoothRemoteGATTService[]> {
+        return this.getServiceImpl(server, undefined, maxRetries);
+    }
 
-                if (!server.connected) {
-                    return this.connectServer(server.device, maxRetries, retries + 1).pipe(
-                        switchMap((newConnectionServer) =>
-                            this.getService(newConnectionServer, service, maxRetries, retries + 1),
-                        ),
-                    );
-                } else if (retries < maxRetries) {
-                    return this.getService(server, service, maxRetries, retries + 1);
-                } else {
-                    throw err;
-                }
-            }),
+    public getCharacteristic(
+        server: BluetoothRemoteGATTServer,
+        service: BluetoothRemoteGATTService,
+        characteristicUuid: BluetoothCharacteristicUUID | undefined,
+        maxRetries = 5,
+    ): Observable<BluetoothRemoteGATTCharacteristic> {
+        return this.getCharacteristicsImpl(server, service, characteristicUuid, maxRetries).pipe(
+            map((characteristics) => characteristics[0]),
         );
+    }
+
+    public getCharacteristics(
+        server: BluetoothRemoteGATTServer,
+        service: BluetoothRemoteGATTService,
+        maxRetries = 5,
+    ): Observable<BluetoothRemoteGATTCharacteristic[]> {
+        return this.getCharacteristicsImpl(server, service, undefined, maxRetries);
     }
 
     public getNotifications(characteristic: BluetoothRemoteGATTCharacteristic): Observable<DataView> {
@@ -123,18 +71,6 @@ export class BluetoothHelper {
         });
     }
 
-    public createTimeOutStream<T>(timeInMs: number): Observable<T> {
-        this.logger.info(`Starting timeout stream...`, timeInMs);
-
-        return interval(timeInMs).pipe(
-            take(1),
-            map(() => {
-                this.logger.warn(`Stream time out`);
-                throw new Error(`Timeout waiting for device connection.`);
-            }),
-        );
-    }
-
     public createDeviceDisconnectionStream(device: BluetoothDevice): Observable<BluetoothDevice> {
         return new Observable<BluetoothDevice>((observer) => {
             const logger = this.logger;
@@ -152,5 +88,136 @@ export class BluetoothHelper {
                 },
             };
         });
+    }
+
+    private requestDeviceImpl(
+        services: [BluetoothServiceUUID, ...BluetoothServiceUUID[]],
+        maxRetries = 5,
+        retries = 0,
+    ): Observable<BluetoothDevice> {
+        const requestStream = from(navigator.bluetooth.requestDevice({ filters: [{ services }] })).pipe(
+            tap((device) => this.logger.info(`Device Selected: ${device.name}`, device)),
+            catchError((err) => {
+                if (retries >= maxRetries || err.name === 'NotFoundError') {
+                    throw err;
+                } else {
+                    this.logger.error(`Error selecting device, retrying`, err);
+                    return this.requestDeviceImpl(services, maxRetries, retries + 1);
+                }
+            }),
+        );
+
+        return requestStream;
+    }
+
+    private connectServerImpl(
+        device: BluetoothDevice,
+        maxRetries = 5,
+        retries = 0,
+    ): Observable<BluetoothRemoteGATTServer> {
+        if (device.gatt == null) {
+            throw new Error(`gatt is not defined on device`);
+        }
+
+        const server = device.gatt;
+
+        this.logger.info(`Connecting to Server...`);
+        return from(server.connect()).pipe(
+            catchError((err) => {
+                if (retries < maxRetries) {
+                    this.logger.error(`Error connecting to server`, err);
+                    return this.connectServerImpl(device, maxRetries, retries + 1);
+                } else {
+                    throw err;
+                }
+            }),
+        );
+    }
+
+    private getServiceImpl(
+        server: BluetoothRemoteGATTServer,
+        serviceUUID: BluetoothServiceUUID | undefined,
+        maxRetries = 5,
+        retries = 0,
+    ): Observable<BluetoothRemoteGATTService[]> {
+        this.logger.info(`Getting Service '${serviceUUID}'...`, server);
+
+        const serviceObservable =
+            serviceUUID != null
+                ? from(server.getPrimaryService(serviceUUID)).pipe(map((service) => [service]))
+                : from(server.getPrimaryServices());
+
+        return serviceObservable.pipe(
+            tap((service) => this.logger.info(`Service Connected`, service)),
+            catchError((err) => {
+                if (serviceUUID != null) {
+                    this.logger.error(`Error getting service '${serviceUUID}' (${retries})`, err);
+                } else {
+                    this.logger.error(`Error getting services (${retries})`, err);
+                }
+
+                if (!server.connected) {
+                    return this.connectServerImpl(server.device, maxRetries, retries + 1).pipe(
+                        switchMap((newConnectionServer) =>
+                            this.getServiceImpl(newConnectionServer, serviceUUID, maxRetries, retries + 1),
+                        ),
+                    );
+                } else if (retries < maxRetries) {
+                    return this.getServiceImpl(server, serviceUUID, maxRetries, retries + 1);
+                } else {
+                    throw err;
+                }
+            }),
+        );
+    }
+
+    private getCharacteristicsImpl(
+        server: BluetoothRemoteGATTServer,
+        service: BluetoothRemoteGATTService,
+        characteristicUuid: BluetoothCharacteristicUUID | undefined,
+        maxRetries = 5,
+        retries = 0,
+    ): Observable<BluetoothRemoteGATTCharacteristic[]> {
+        this.logger.info(`Getting Characteristics (${service.uuid})...`);
+
+        const characteristicObservable =
+            characteristicUuid != null
+                ? from(service.getCharacteristic(characteristicUuid)).pipe(map((characteristic) => [characteristic]))
+                : from(service.getCharacteristics());
+
+        return characteristicObservable.pipe(
+            tap((characteristics) =>
+                this.logger.info(`Characteristics loaded (${service.uuid}/${characteristicUuid})`, characteristics),
+            ),
+            catchError((err) => {
+                if (characteristicUuid != null) {
+                    this.logger.error(`Error getting characteristic '${characteristicUuid}' (${retries})`, err);
+                } else {
+                    this.logger.error(`Error getting characteristics (${retries})`, err);
+                }
+
+                if (!server.connected) {
+                    return this.connectServerImpl(server.device, maxRetries, retries + 1).pipe(
+                        mergeMap((newConnectionServer) =>
+                            this.getServiceImpl(newConnectionServer, service.uuid, maxRetries, retries + 1).pipe(
+                                mergeMap((newConnectionService) =>
+                                    this.getCharacteristicsImpl(
+                                        newConnectionServer,
+                                        newConnectionService[0],
+                                        characteristicUuid,
+                                        maxRetries,
+                                        retries + 1,
+                                    ),
+                                ),
+                            ),
+                        ),
+                    );
+                } else if (retries < maxRetries) {
+                    return this.getCharacteristicsImpl(server, service, characteristicUuid, maxRetries, retries + 1);
+                } else {
+                    throw err;
+                }
+            }),
+        );
     }
 }

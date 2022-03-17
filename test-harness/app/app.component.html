@@ -1,0 +1,58 @@
+<div class="container">
+    <div>
+        <h1>BLE Helper Test Harness</h1>
+    </div>
+
+    <form>
+        <div class="form-group">
+            <label for="serviceName">Service Name</label>
+            <input type="input" class="form-control" id="serviceName" name="serviceName" [(ngModel)]="serviceName"
+                [disabled]="deviceRequested">
+        </div>
+        <div class="form-group mt-2">
+            <button type="button" class="btn btn-primary" [disabled]="deviceRequested || serviceName == ''"
+                (click)="requestDevice()">Request Device</button>
+        </div>
+        <div *ngIf="deviceRequested && device == null">
+            Waiting for device...
+        </div>
+    </form>
+
+    <div *ngIf="device != null" class="d-flex">
+        <div class="result-column">Device:</div>
+        <div>{{device.name != null ? device.name : 'no_name'}}</div>
+    </div>
+
+    <div *ngIf="device != null && !connected">
+        Connecting...
+    </div>
+
+    <div *ngIf="connected">
+        Connected
+    </div>
+
+    <div *ngIf="connected && characteristics == null">
+        Loading Services...
+    </div>
+
+    <div *ngIf="characteristics != null">
+        <h3>Characteristics:</h3>
+
+        <table>
+            <tr>
+                <th>Service</th>
+                <th>Characteristic</th>
+            </tr>
+
+            <tr *ngFor="let characteristic of characteristics">
+                <td>
+                    {{characteristic.uuid}}
+                </td>
+                <td>
+                    {{characteristic.service.uuid}}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+</div>
