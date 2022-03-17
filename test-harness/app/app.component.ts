@@ -7,8 +7,8 @@ type Characteristic = {
     displayName: string;
     serviceName: string;
     gatt: BluetoothRemoteGATTCharacteristic;
-    notifyValues?: number[];
-    readValues?: number[];
+    notifyValues?: string | number[];
+    readValues?: string | number[];
 };
 
 @Component({
@@ -40,7 +40,7 @@ export class AppComponent {
 
     public serviceName = 'Heart Rate';
 
-    public requestDevice() {
+    public async requestDevice() {
         this._errorMessage = undefined;
         const service = GattService[this.serviceName as any];
 
@@ -50,11 +50,11 @@ export class AppComponent {
         }
 
         this._deviceRequested = true;
-        this.helper.requestDevice([service], 5).subscribe((device) => {
-            this._device = device;
 
-            this.loadServices(device);
-        });
+        const device = await lastValueFrom(this.helper.requestDevice([service], 5));
+        this._device = device;
+
+        this.loadServices(this._device);
     }
 
     private _connected = false;
@@ -70,25 +70,25 @@ export class AppComponent {
     }
 
     public async readCharacteristic(characteristic: Characteristic) {
-        console.log(`Reading ${characteristic.displayName}`);
         const value = await characteristic.gatt.readValue();
 
         characteristic.readValues = this.convertDataView(value);
     }
 
     public async notifyCharacteristic(characteristic: Characteristic) {
-        console.log(`Reading ${characteristic.displayName}`);
-        const gattCharacteristic = await characteristic.gatt.startNotifications();
-
-        gattCharacteristic.addEventListener(
-            'characteristicvaluechanged',
-            () =>
-                (characteristic.notifyValues =
-                    gattCharacteristic.value != null ? this.convertDataView(gattCharacteristic.value) : []),
-        );
+        this.helper
+            .getNotifications(characteristic.gatt)
+            .subscribe((value) => (characteristic.notifyValues = this.convertDataView(value)));
     }
 
-    private convertDataView(view: DataView): number[] {
+    private convertDataView(view: DataView): number[] | string {
+        const validString = /\w/;
+        const stringAttempt = this.textDecoder.decode(view);
+
+        if (validString.test(stringAttempt)) {
+            return stringAttempt;
+        }
+
         const byteValues: number[] = [];
 
         for (let i = 0; i < view.byteLength; i++) {
@@ -111,8 +111,6 @@ export class AppComponent {
                 toArray(),
             ),
         );
-
-        console.log(`Characteristics retrieved: `, characteristics);
 
         this._characteristics = characteristics
             .reduce((all, current) => [...all, ...current], new Array<BluetoothRemoteGATTCharacteristic>())

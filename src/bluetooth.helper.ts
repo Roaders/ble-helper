@@ -1,6 +1,7 @@
 import { Injectable } from '@morgan-stanley/needle';
 import { from, Observable } from 'rxjs';
 import { catchError, map, mergeMap, switchMap, tap } from 'rxjs/operators';
+import { GattService } from './constants';
 import { Logger } from './logger';
 
 @Injectable()
@@ -64,7 +65,7 @@ export class BluetoothHelper {
 
             return {
                 unsubscribe: () => {
-                    this.logger.info(`UNsubscribe from Notifications`, characteristic);
+                    this.logger.info(`Unsubscribe from Notifications`, characteristic);
                     characteristic.removeEventListener('characteristicvaluechanged', handleEvent);
                 },
             };
@@ -95,7 +96,17 @@ export class BluetoothHelper {
         maxRetries = 5,
         retries = 0,
     ): Observable<BluetoothDevice> {
-        const requestStream = from(navigator.bluetooth.requestDevice({ filters: [{ services }] })).pipe(
+        return from(
+            navigator.bluetooth.requestDevice({
+                filters: [{ services }],
+                optionalServices: [
+                    GattService.Battery,
+                    GattService['Generic Access'],
+                    GattService['Generic Attribute'],
+                    GattService['Device Information'],
+                ],
+            }),
+        ).pipe(
             tap((device) => this.logger.info(`Device Selected: ${device.name}`, device)),
             catchError((err) => {
                 if (retries >= maxRetries || err.name === 'NotFoundError') {
@@ -106,8 +117,6 @@ export class BluetoothHelper {
                 }
             }),
         );
-
-        return requestStream;
     }
 
     private connectServerImpl(
