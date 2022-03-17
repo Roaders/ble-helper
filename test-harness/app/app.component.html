@@ -13,6 +13,9 @@
             <label for="serviceName">Service Name</label>
             <input type="input" class="form-control" id="serviceName" name="serviceName" [(ngModel)]="serviceName"
                 [disabled]="deviceRequested">
+            <small class="form-text text-muted">See <a
+                    href="https://github.com/Roaders/ble-helper/blob/main/src/constants.ts#L3" target="_blank">here</a>
+                for acceptable service names.</small>
         </div>
         <div class="form-group mt-2">
             <button type="button" class="btn btn-primary" [disabled]="deviceRequested || serviceName == ''"
@@ -65,14 +68,16 @@
                     <span *ngIf="characteristic.readValues != null">{{characteristic.readValues}}</span>
                 </td>
                 <td>
-                    <button *ngIf="characteristic.gatt.properties.notify && characteristic.notifyValues == null" type="button" class="btn btn-secondary btn-sm"
+                    <button *ngIf="characteristic.gatt.properties.notify && characteristic.notifyValues == null"
+                        type="button" class="btn btn-secondary btn-sm"
                         (click)="notifyCharacteristic(characteristic)">Notify</button>
                     <span *ngIf="characteristic.notifyValues != null">{{characteristic.notifyValues}}</span>
                 </td>
             </tr>
         </table>
 
-        <small class="text-muted">(Read / Notify values are attempted to be converted into a string. If they don't have any normal characters in the byte values are displayed instead - which won't make much sense)</small>
+        <small class="text-muted">(Read / Notify values are attempted to be converted into a string. If they don't have
+            any normal characters in the byte values are displayed instead - which won't make much sense)</small>
     </div>
 
 </div>
