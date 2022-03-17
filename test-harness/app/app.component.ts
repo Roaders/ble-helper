@@ -42,7 +42,7 @@ export class AppComponent {
 
     public async requestDevice() {
         this._errorMessage = undefined;
-        const service = GattService[this.serviceName as any];
+        const service = GattService[this.serviceName as keyof typeof GattService];
 
         if (service == null) {
             this._errorMessage = `'${this.serviceName}' is not a valid service name`;
