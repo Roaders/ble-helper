@@ -3,7 +3,12 @@
         <h1>BLE Helper Test Harness</h1>
     </div>
 
+    <div *ngIf="errorMessage != null" class="alert alert-danger" role="alert">
+        {{errorMessage}}
+    </div>
+
     <form>
+
         <div class="form-group">
             <label for="serviceName">Service Name</label>
             <input type="input" class="form-control" id="serviceName" name="serviceName" [(ngModel)]="serviceName"
@@ -42,17 +47,32 @@
             <tr>
                 <th>Service</th>
                 <th>Characteristic</th>
+                <th>Read</th>
+                <th>Notify</th>
             </tr>
 
             <tr *ngFor="let characteristic of characteristics">
                 <td>
-                    {{characteristic.uuid}}
+                    {{characteristic.serviceName}}
                 </td>
                 <td>
-                    {{characteristic.service.uuid}}
+                    {{characteristic.displayName}}
+                </td>
+                <td>
+                    <button *ngIf="characteristic.gatt.properties.read && characteristic.readValues == null"
+                        type="button" class="btn btn-secondary btn-sm"
+                        (click)="readCharacteristic(characteristic)">Read</button>
+                    <span *ngIf="characteristic.readValues != null">{{characteristic.readValues}}</span>
+                </td>
+                <td>
+                    <button *ngIf="characteristic.gatt.properties.notify && characteristic.notifyValues == null" type="button" class="btn btn-secondary btn-sm"
+                        (click)="notifyCharacteristic(characteristic)">Notify</button>
+                    <span *ngIf="characteristic.notifyValues != null">{{characteristic.notifyValues}}</span>
                 </td>
             </tr>
         </table>
+
+        <small class="text-muted">(Read / Notify values are just each byte in the byte array turned into a number so probably don't make much sense.)</small>
     </div>
 
 </div>
