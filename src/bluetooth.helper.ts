@@ -1,8 +1,12 @@
-import { Injectable } from '@morgan-stanley/needle';
+import { Injectable, get } from '@morgan-stanley/needle';
 import { from, Observable, of } from 'rxjs';
 import { catchError, map, mergeMap, switchMap, tap } from 'rxjs/operators';
 import { GattService } from './constants';
 import { Logger } from './logger';
+
+export function getInstance(): BluetoothHelper {
+    return get(BluetoothHelper);
+}
 
 @Injectable()
 export class BluetoothHelper {

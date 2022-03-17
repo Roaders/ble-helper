@@ -16,7 +16,7 @@ module.exports = {
         sourceType: 'module',
     },
     plugins: ['@typescript-eslint'],
-    ignorePatterns: ['dist/'],
+    ignorePatterns: ['dist/', 'build/'],
     rules: {
         'prettier/prettier': [
             'error',

@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { firstValueFrom, from, lastValueFrom } from 'rxjs';
 import { mergeMap, toArray } from 'rxjs/operators';
-import { BluetoothHelper, GattService, getCharacteristicName, getServiceName } from '../../src';
+import { BluetoothHelper, GattService, getCharacteristicName, getInstance, getServiceName } from '../../src';
 
 type Characteristic = {
     displayName: string;
@@ -16,7 +16,10 @@ type Characteristic = {
     templateUrl: './app.component.html',
 })
 export class AppComponent {
-    constructor(private helper: BluetoothHelper) {}
+    private helper: BluetoothHelper;
+    constructor() {
+        this.helper = getInstance();
+    }
 
     private readonly textDecoder = new TextDecoder();
 
