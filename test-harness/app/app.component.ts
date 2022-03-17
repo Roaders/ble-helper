@@ -52,6 +52,13 @@ export class AppComponent {
         this._deviceRequested = true;
 
         const device = await lastValueFrom(this.helper.requestDevice([service], 5));
+
+        if (device == null) {
+            console.log(`User cancelled device selection`);
+            this._deviceRequested = false;
+            return;
+        }
+
         this._device = device;
 
         this.loadServices(this._device);

@@ -1,5 +1,5 @@
 import { Injectable } from '@morgan-stanley/needle';
-import { from, Observable } from 'rxjs';
+import { from, Observable, of } from 'rxjs';
 import { catchError, map, mergeMap, switchMap, tap } from 'rxjs/operators';
 import { GattService } from './constants';
 import { Logger } from './logger';
@@ -11,7 +11,10 @@ export class BluetoothHelper {
     /**
      * Request a bluetooth device. This will launch the browser device picking dialog for a user to choose device
      */
-    public requestDevice(services: [GattService, ...GattService[]], maxRetries = 5): Observable<BluetoothDevice> {
+    public requestDevice(
+        services: [GattService, ...GattService[]],
+        maxRetries = 5,
+    ): Observable<BluetoothDevice | undefined> {
         this.logger.info('Requesting Device...', services);
         return this.requestDeviceImpl(services, maxRetries);
     }
@@ -122,7 +125,7 @@ export class BluetoothHelper {
         services: [BluetoothServiceUUID, ...BluetoothServiceUUID[]],
         maxRetries = 5,
         retries = 0,
-    ): Observable<BluetoothDevice> {
+    ): Observable<BluetoothDevice | undefined> {
         return from(
             navigator.bluetooth.requestDevice({
                 filters: [{ services }],
@@ -136,7 +139,9 @@ export class BluetoothHelper {
         ).pipe(
             tap((device) => this.logger.info(`Device Selected: ${device.name}`, device)),
             catchError((err) => {
-                if (retries >= maxRetries || err.name === 'NotFoundError') {
+                if (err.name === 'NotFoundError') {
+                    return of(undefined);
+                } else if (retries >= maxRetries) {
                     throw err;
                 } else {
                     this.logger.error(`Error selecting device, retrying`, err);
