@@ -8,18 +8,24 @@ import { Logger } from './logger';
 export class BluetoothHelper {
     constructor(private logger: Logger) {}
 
-    public requestDevice(
-        services: [BluetoothServiceUUID, ...BluetoothServiceUUID[]],
-        maxRetries = 5,
-    ): Observable<BluetoothDevice> {
+    /**
+     * Request a bluetooth device. This will launch the browser device picking dialog for a user to choose device
+     */
+    public requestDevice(services: [GattService, ...GattService[]], maxRetries = 5): Observable<BluetoothDevice> {
         this.logger.info('Requesting Device...', services);
         return this.requestDeviceImpl(services, maxRetries);
     }
 
+    /**
+     * Connects to devices Gatt server
+     */
     public connectServer(device: BluetoothDevice, maxRetries = 5): Observable<BluetoothRemoteGATTServer> {
         return this.connectServerImpl(device, maxRetries);
     }
 
+    /**
+     * Attempts to connect to a specific service on the device
+     */
     public getService(
         server: BluetoothRemoteGATTServer,
         service: BluetoothServiceUUID,
@@ -28,10 +34,16 @@ export class BluetoothHelper {
         return this.getServiceImpl(server, service, maxRetries).pipe(map((services) => services[0]));
     }
 
+    /**
+     * Returns all services for a given device
+     */
     public getServices(server: BluetoothRemoteGATTServer, maxRetries = 5): Observable<BluetoothRemoteGATTService[]> {
         return this.getServiceImpl(server, undefined, maxRetries);
     }
 
+    /**
+     * Attempts to retrieve a specific characteristic
+     */
     public getCharacteristic(
         server: BluetoothRemoteGATTServer,
         service: BluetoothRemoteGATTService,
@@ -43,6 +55,13 @@ export class BluetoothHelper {
         );
     }
 
+    /**
+     * Gets all characteristics for a given service
+     * @param server
+     * @param service
+     * @param maxRetries
+     * @returns
+     */
     public getCharacteristics(
         server: BluetoothRemoteGATTServer,
         service: BluetoothRemoteGATTService,
@@ -51,6 +70,11 @@ export class BluetoothHelper {
         return this.getCharacteristicsImpl(server, service, undefined, maxRetries);
     }
 
+    /**
+     * subscribes to notifications for the specified characteristic
+     * @param characteristic
+     * @returns
+     */
     public getNotifications(characteristic: BluetoothRemoteGATTCharacteristic): Observable<DataView> {
         characteristic.startNotifications();
 
@@ -72,6 +96,9 @@ export class BluetoothHelper {
         });
     }
 
+    /**
+     * returns a stream that fires when the device disconnects
+     */
     public createDeviceDisconnectionStream(device: BluetoothDevice): Observable<BluetoothDevice> {
         return new Observable<BluetoothDevice>((observer) => {
             const logger = this.logger;

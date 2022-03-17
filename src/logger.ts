@@ -2,6 +2,9 @@ import { Injectable } from '@morgan-stanley/needle';
 import { LogLevel } from './contracts';
 
 @Injectable()
+/**
+ * Replaceable logger. implement this class with your own implementation and provide it as constructor arg to BluetoothHelper
+ */
 export class Logger {
     public log(level: keyof typeof LogLevel, message: string, ...meta: unknown[]): void {
         console.log(`[${level.toUpperCase()}] ${message}`, ...meta);

@@ -1,9 +1,19 @@
 import { GattCharacteristic, GattService } from './constants';
 
+/**
+ * looks up a service UUID and returns it's name if it's known
+ * @param uuid
+ * @returns string
+ */
 export function getServiceName(uuid: BluetoothServiceUUID): string {
     return lookupEnumName(uuid, GattService, 'service name');
 }
 
+/**
+ * looks up a characteristic UUID and returns it's name if it's known
+ * @param uuid
+ * @returns string
+ */
 export function getCharacteristicName(uuid: BluetoothCharacteristicUUID): string {
     return lookupEnumName(uuid, GattCharacteristic, 'service name');
 }
