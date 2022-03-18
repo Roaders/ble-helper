@@ -115,3 +115,7 @@ const device = await lastValueFrom(
 ```
 
 The `parseValue` function will need to be written for each different BLuetooth characteristic based on the documents [here](https://www.bluetooth.com/specifications/specs/).
+
+## Notes
+
+ALthough `Angular` is included in this project this is only for the test harness. There are no angular dependencies when consuming this project.
