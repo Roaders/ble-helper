@@ -1,5 +1,8 @@
 // Source: https://btprodspecificationrefs.blob.core.windows.net/assigned-values/16-bit%20UUID%20Numbers%20Document.pdf
 
+import { DisplayValue } from './contracts';
+import { isNumber } from './type-guards';
+
 export enum GattService {
     'Generic Access' = 0x1800,
     'Generic Attribute' = 0x1801,
@@ -63,6 +66,18 @@ export enum GattService {
     'Common Audio Service' = 0x1853,
     'Hearing Access Service' = 0x1854,
     'TMAS Service' = 0x1855,
+}
+
+export function getServices(): DisplayValue<number>[] {
+    return Object.values(GattService)
+        .filter(isNumber)
+        .map((value) => ({ value, display: GattService[value] }));
+}
+
+export function getCharacteristics(): DisplayValue<number>[] {
+    return Object.values(GattCharacteristic)
+        .filter(isNumber)
+        .map((value) => ({ value, display: GattService[value] }));
 }
 
 export enum GattCharacteristic {

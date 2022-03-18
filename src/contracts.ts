@@ -6,3 +6,8 @@ export enum LogLevel {
     debug = 1,
     trace = 0,
 }
+
+export type DisplayValue<T> = {
+    display: string;
+    value: T;
+};

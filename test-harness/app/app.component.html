@@ -7,25 +7,29 @@
         {{errorMessage}}
     </div>
 
+
     <form>
 
         <div class="form-group">
-            <label for="serviceName">Service Name</label>
-            <input type="input" class="form-control" id="serviceName" name="serviceName" [(ngModel)]="serviceName"
-                [disabled]="deviceRequested">
+            <label for="selectedService">Service:</label>
             <div>
-                <small class="form-text text-muted">The following optional services are configured so that they will be accessible on your device:
-                    Battery, Generic Access, Generic Attribute, Device Information</small>
-            </div>
-            <div>
-                <small class="form-text text-muted">See <a
-                        href="https://github.com/Roaders/ble-helper/blob/main/src/constants.ts#L3"
-                        target="_blank">here</a>
-                    for acceptable service names.</small>
+                <select name="selectedService" id="selectedService" [(ngModel)]="selectedService">
+                    <option *ngFor="let service of services" [ngValue]="service">{{service.display}}</option>
+                </select>
             </div>
         </div>
+
+        <div class="form-group">
+            <label for="optionalServices">Optional Services:</label>
+            <div>
+                <select name="optionalServices" id="optionalServices" [(ngModel)]="optionalServices" multiple>
+                    <option *ngFor="let service of services" [ngValue]="service">{{service.display}}</option>
+                </select>
+            </div>
+        </div>
+
         <div class="form-group mt-2">
-            <button type="button" class="btn btn-primary" [disabled]="deviceRequested || serviceName == ''"
+            <button type="button" class="btn btn-primary" [disabled]="deviceRequested || selectedService == null"
                 (click)="requestDevice()">Request Device</button>
         </div>
         <div *ngIf="deviceRequested && device == null">

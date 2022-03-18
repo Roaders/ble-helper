@@ -1,7 +1,14 @@
 import { Component } from '@angular/core';
 import { firstValueFrom, from, lastValueFrom } from 'rxjs';
 import { mergeMap, toArray } from 'rxjs/operators';
-import { BluetoothHelper, GattService, getCharacteristicName, getInstance, getServiceName } from '../../src';
+import {
+    BluetoothHelper,
+    DisplayValue,
+    GattService,
+    getCharacteristicName,
+    getServiceName,
+    getServices,
+} from '../../src';
 
 type Characteristic = {
     displayName: string;
@@ -11,15 +18,21 @@ type Characteristic = {
     readValues?: string | number[];
 };
 
+const defaultOptionalServices = [
+    GattService.Battery,
+    GattService['Generic Access'],
+    GattService['Generic Attribute'],
+    GattService['Device Information'],
+];
+
 @Component({
     selector: 'app-root',
     templateUrl: './app.component.html',
 })
 export class AppComponent {
-    private helper: BluetoothHelper;
-    constructor() {
-        this.helper = getInstance();
-    }
+    constructor(private helper: BluetoothHelper) {}
+
+    public readonly services = getServices();
 
     private readonly textDecoder = new TextDecoder();
 
@@ -41,28 +54,28 @@ export class AppComponent {
         return this._deviceRequested;
     }
 
-    public serviceName = 'Heart Rate';
+    public selectedService = this.services.find((service) => service.display === 'Heart Rate');
+
+    public optionalServices = this.services.filter((service) =>
+        defaultOptionalServices.some((defaultService) => service.value === defaultService),
+    );
 
     public async requestDevice() {
         this._errorMessage = undefined;
-        const service = GattService[this.serviceName as keyof typeof GattService];
 
-        if (service == null) {
-            this._errorMessage = `'${this.serviceName}' is not a valid service name`;
+        if (this.selectedService == null) {
+            this._errorMessage = `Service must be selected`;
             return;
         }
 
         this._deviceRequested = true;
 
+        console.log(`Requesting`, { selectedService: this.selectedService, optionalServices: this.optionalServices });
+
         const device = await lastValueFrom(
             this.helper.requestDevice({
-                filters: [{ services: [GattService['Heart Rate']] }],
-                optionalServices: [
-                    GattService.Battery,
-                    GattService['Generic Access'],
-                    GattService['Generic Attribute'],
-                    GattService['Device Information'],
-                ],
+                filters: [{ services: [this.selectedService.value] }],
+                optionalServices: this.optionalServices.map((service) => service.value),
             }),
         );
 
