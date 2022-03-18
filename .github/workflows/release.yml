@@ -25,4 +25,5 @@ jobs:
     
     - name: Deploy Test Harness
       uses: JamesIves/github-pages-deploy-action@v4.2.5
-      branch: test-harness
+      with:
+        branch: test-harness
