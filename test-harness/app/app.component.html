@@ -13,9 +13,16 @@
             <label for="serviceName">Service Name</label>
             <input type="input" class="form-control" id="serviceName" name="serviceName" [(ngModel)]="serviceName"
                 [disabled]="deviceRequested">
-            <small class="form-text text-muted">See <a
-                    href="https://github.com/Roaders/ble-helper/blob/main/src/constants.ts#L3" target="_blank">here</a>
-                for acceptable service names.</small>
+            <div>
+                <small class="form-text text-muted">The following optional services are configured so that they will be accessible on your device:
+                    Battery, Generic Access, Generic Attribute, Device Information</small>
+            </div>
+            <div>
+                <small class="form-text text-muted">See <a
+                        href="https://github.com/Roaders/ble-helper/blob/main/src/constants.ts#L3"
+                        target="_blank">here</a>
+                    for acceptable service names.</small>
+            </div>
         </div>
         <div class="form-group mt-2">
             <button type="button" class="btn btn-primary" [disabled]="deviceRequested || serviceName == ''"
