@@ -16,11 +16,19 @@ export class BluetoothHelper {
      * Request a bluetooth device. This will launch the browser device picking dialog for a user to choose device
      */
     public requestDevice(
-        services: [GattService, ...GattService[]],
+        services: [GattService, ...GattService[]] | RequestDeviceOptions,
         maxRetries = 5,
     ): Observable<BluetoothDevice | undefined> {
         this.logger.info('Requesting Device...', services);
-        return this.requestDeviceImpl(services, maxRetries);
+
+        const options: RequestDeviceOptions = Array.isArray(services)
+            ? {
+                  filters: [{ services }],
+                  optionalServices: services,
+              }
+            : services;
+
+        return this.requestDeviceImpl(options, maxRetries);
     }
 
     /**
@@ -126,21 +134,11 @@ export class BluetoothHelper {
     }
 
     private requestDeviceImpl(
-        services: [BluetoothServiceUUID, ...BluetoothServiceUUID[]],
+        options: RequestDeviceOptions,
         maxRetries = 5,
         retries = 0,
     ): Observable<BluetoothDevice | undefined> {
-        return from(
-            navigator.bluetooth.requestDevice({
-                filters: [{ services }],
-                optionalServices: [
-                    GattService.Battery,
-                    GattService['Generic Access'],
-                    GattService['Generic Attribute'],
-                    GattService['Device Information'],
-                ],
-            }),
-        ).pipe(
+        return from(navigator.bluetooth.requestDevice(options)).pipe(
             tap((device) => this.logger.info(`Device Selected: ${device.name}`, device)),
             catchError((err) => {
                 if (err.name === 'NotFoundError') {
@@ -149,7 +147,7 @@ export class BluetoothHelper {
                     throw err;
                 } else {
                     this.logger.error(`Error selecting device, retrying`, err);
-                    return this.requestDeviceImpl(services, maxRetries, retries + 1);
+                    return this.requestDeviceImpl(options, maxRetries, retries + 1);
                 }
             }),
         );

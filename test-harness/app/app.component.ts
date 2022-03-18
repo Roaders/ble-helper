@@ -54,7 +54,17 @@ export class AppComponent {
 
         this._deviceRequested = true;
 
-        const device = await lastValueFrom(this.helper.requestDevice([service], 5));
+        const device = await lastValueFrom(
+            this.helper.requestDevice({
+                filters: [{ services: [GattService['Heart Rate']] }],
+                optionalServices: [
+                    GattService.Battery,
+                    GattService['Generic Access'],
+                    GattService['Generic Attribute'],
+                    GattService['Device Information'],
+                ],
+            }),
+        );
 
         if (device == null) {
             console.log(`User cancelled device selection`);

@@ -94,4 +94,20 @@ async function getHeartRateUpdates() {
 ```
 `BluetoothHelper` returns observables but I've used async above to make it a bit clearer what is going on.
 
+If you want to connect to multiple different services on your device these services must be passed as `optionalServices` in a `RequestDeviceOptions` object:
+
+```typescript
+const device = await lastValueFrom(
+    this.helper.requestDevice({
+        filters: [{ services: [GattService['Heart Rate']] }],
+        optionalServices: [
+            GattService.Battery,
+            GattService['Generic Access'],
+            GattService['Generic Attribute'],
+            GattService['Device Information'],
+        ],
+    }),
+);
+```
+
 The `parseValue` function will need to be written for each different BLuetooth characteristic based on the documents [here](https://www.bluetooth.com/specifications/specs/).
