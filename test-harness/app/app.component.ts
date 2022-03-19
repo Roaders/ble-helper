@@ -1,28 +1,21 @@
 import { Component } from '@angular/core';
 import { firstValueFrom, from, lastValueFrom } from 'rxjs';
 import { mergeMap, toArray } from 'rxjs/operators';
-import {
-    BluetoothHelper,
-    DisplayValue,
-    GattService,
-    getCharacteristicName,
-    getServiceName,
-    getServices,
-} from '../../src';
+import { BluetoothHelper, GattCharacteristic, GattServiceId, getServiceName, getServices } from '../../src';
 
 type Characteristic = {
-    displayName: string;
-    serviceName: string;
+    displayName?: string;
+    serviceName?: string;
     gatt: BluetoothRemoteGATTCharacteristic;
     notifyValues?: string | number[];
     readValues?: string | number[];
 };
 
 const defaultOptionalServices = [
-    GattService.Battery,
-    GattService['Generic Access'],
-    GattService['Generic Attribute'],
-    GattService['Device Information'],
+    GattServiceId.Battery,
+    GattServiceId['Generic Access'],
+    GattServiceId['Generic Attribute'],
+    GattServiceId['Device Information'],
 ];
 
 @Component({
@@ -140,17 +133,17 @@ export class AppComponent {
 
         const characteristics = await lastValueFrom(
             from(services).pipe(
-                mergeMap((service) => this.helper.getCharacteristics(gattServer, service)),
+                mergeMap((service) => this.helper.getCharacteristics(gattServer, service.gatt)),
                 toArray(),
             ),
         );
 
         this._characteristics = characteristics
-            .reduce((all, current) => [...all, ...current], new Array<BluetoothRemoteGATTCharacteristic>())
-            .map((gatt) => ({
-                gatt,
-                displayName: getCharacteristicName(gatt.uuid),
-                serviceName: getServiceName(gatt.service.uuid),
+            .reduce((all, current) => [...all, ...current], new Array<GattCharacteristic>())
+            .map((characteristic) => ({
+                gatt: characteristic.gatt,
+                displayName: characteristic.name,
+                serviceName: getServiceName(characteristic.gatt.service.uuid),
             }));
     }
 }

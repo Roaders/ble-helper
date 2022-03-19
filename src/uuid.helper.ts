@@ -1,4 +1,4 @@
-import { GattCharacteristic, GattService } from './constants';
+import { GattCharacteristicId, GattServiceId } from './constants';
 
 /**
  * looks up a service UUID and returns it's name if it's known
@@ -6,7 +6,7 @@ import { GattCharacteristic, GattService } from './constants';
  * @returns string
  */
 export function getServiceName(uuid: BluetoothServiceUUID): string {
-    return lookupEnumName(uuid, GattService, 'service name');
+    return lookupEnumName(uuid, GattServiceId, 'service name');
 }
 
 /**
@@ -15,14 +15,18 @@ export function getServiceName(uuid: BluetoothServiceUUID): string {
  * @returns string
  */
 export function getCharacteristicName(uuid: BluetoothCharacteristicUUID): string {
-    return lookupEnumName(uuid, GattCharacteristic, 'service name');
+    return lookupEnumName(uuid, GattCharacteristicId, 'service name');
+}
+
+export function extract16Bit(uuid: string): number {
+    const components = uuid.split('-');
+
+    return parseInt(components[0], 16);
 }
 
 function lookupEnumName(uuid: number | string, lookup: Record<number, string>, description: string): string {
     if (typeof uuid == 'string') {
-        const components = uuid.split('-');
-
-        uuid = parseInt(components[0], 16);
+        uuid = extract16Bit(uuid);
     }
 
     const name = lookup[uuid];

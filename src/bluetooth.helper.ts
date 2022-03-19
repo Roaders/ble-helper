@@ -1,8 +1,11 @@
 import { Injectable, get } from '@morgan-stanley/needle';
 import { from, Observable, of } from 'rxjs';
 import { catchError, map, mergeMap, switchMap, tap } from 'rxjs/operators';
-import { GattService } from './constants';
+import { GattCharacteristic } from '.';
+import { GattCharacteristicId, GattCharacteristicName, GattServiceId, GattServiceName } from './constants';
+import { GattService } from './contracts';
 import { Logger } from './logger';
+import { extract16Bit } from './uuid.helper';
 
 export function getInstance(): BluetoothHelper {
     return get(BluetoothHelper);
@@ -16,7 +19,7 @@ export class BluetoothHelper {
      * Request a bluetooth device. This will launch the browser device picking dialog for a user to choose device
      */
     public requestDevice(
-        services: [GattService, ...GattService[]] | RequestDeviceOptions,
+        services: [GattServiceId, ...GattServiceId[]] | RequestDeviceOptions,
         maxRetries = 5,
     ): Observable<BluetoothDevice | undefined> {
         this.logger.info('Requesting Device...', services);
@@ -41,32 +44,34 @@ export class BluetoothHelper {
     /**
      * Attempts to connect to a specific service on the device
      */
-    public getService(
+    public getService<T extends GattServiceName>(
         server: BluetoothRemoteGATTServer,
-        service: BluetoothServiceUUID,
+        serviceName: T,
         maxRetries = 5,
-    ): Observable<BluetoothRemoteGATTService> {
-        return this.getServiceImpl(server, service, maxRetries).pipe(map((services) => services[0]));
+    ): Observable<GattService<T> | undefined> {
+        return this.getServiceImpl(server, serviceName, maxRetries).pipe(
+            map((services) => services.find(isServiceWithId(serviceName))),
+        );
     }
 
     /**
      * Returns all services for a given device
      */
-    public getServices(server: BluetoothRemoteGATTServer, maxRetries = 5): Observable<BluetoothRemoteGATTService[]> {
+    public getServices(server: BluetoothRemoteGATTServer, maxRetries = 5): Observable<GattService[]> {
         return this.getServiceImpl(server, undefined, maxRetries);
     }
 
     /**
      * Attempts to retrieve a specific characteristic
      */
-    public getCharacteristic(
+    public getCharacteristic<T extends GattCharacteristicName>(
         server: BluetoothRemoteGATTServer,
         service: BluetoothRemoteGATTService,
-        characteristicUuid: BluetoothCharacteristicUUID | undefined,
+        characteristicId: T,
         maxRetries = 5,
-    ): Observable<BluetoothRemoteGATTCharacteristic> {
-        return this.getCharacteristicsImpl(server, service, characteristicUuid, maxRetries).pipe(
-            map((characteristics) => characteristics[0]),
+    ): Observable<GattCharacteristic<T> | undefined> {
+        return this.getCharacteristicsImpl(server, service, characteristicId, maxRetries).pipe(
+            map((characteristics) => characteristics.find(isCharacteristicWithId(characteristicId))),
         );
     }
 
@@ -81,7 +86,7 @@ export class BluetoothHelper {
         server: BluetoothRemoteGATTServer,
         service: BluetoothRemoteGATTService,
         maxRetries = 5,
-    ): Observable<BluetoothRemoteGATTCharacteristic[]> {
+    ): Observable<GattCharacteristic[]> {
         return this.getCharacteristicsImpl(server, service, undefined, maxRetries);
     }
 
@@ -179,22 +184,36 @@ export class BluetoothHelper {
 
     private getServiceImpl(
         server: BluetoothRemoteGATTServer,
-        serviceUUID: BluetoothServiceUUID | undefined,
+        service: GattServiceName | GattServiceId | undefined,
         maxRetries = 5,
         retries = 0,
-    ): Observable<BluetoothRemoteGATTService[]> {
-        this.logger.info(`Getting Service '${serviceUUID}'...`, server);
+    ): Observable<GattService[]> {
+        this.logger.info(`Getting Service '${service}'...`, server);
+
+        let uuid: number | undefined;
+
+        switch (typeof service) {
+            case 'string':
+                uuid = GattServiceId[service];
+                break;
+            case 'number':
+                uuid = service;
+                break;
+        }
 
         const serviceObservable =
-            serviceUUID != null
-                ? from(server.getPrimaryService(serviceUUID)).pipe(map((service) => [service]))
+            uuid != null
+                ? from(server.getPrimaryService(uuid)).pipe(map((service) => [service]))
                 : from(server.getPrimaryServices());
 
         return serviceObservable.pipe(
-            tap((service) => this.logger.info(`Service Connected`, service)),
+            map((services) => services.map(mapGattService)),
+            tap((services) =>
+                this.logger.info(`Services Connected (${printStringArray(services.map((s) => s.name))})`, services),
+            ),
             catchError((err) => {
-                if (serviceUUID != null) {
-                    this.logger.error(`Error getting service '${serviceUUID}' (${retries})`, err);
+                if (service != null) {
+                    this.logger.error(`Error getting service '${service}' (${retries})`, err);
                 } else {
                     this.logger.error(`Error getting services (${retries})`, err);
                 }
@@ -202,11 +221,11 @@ export class BluetoothHelper {
                 if (!server.connected) {
                     return this.connectServerImpl(server.device, maxRetries, retries + 1).pipe(
                         switchMap((newConnectionServer) =>
-                            this.getServiceImpl(newConnectionServer, serviceUUID, maxRetries, retries + 1),
+                            this.getServiceImpl(newConnectionServer, service, maxRetries, retries + 1),
                         ),
                     );
                 } else if (retries < maxRetries) {
-                    return this.getServiceImpl(server, serviceUUID, maxRetries, retries + 1);
+                    return this.getServiceImpl(server, service, maxRetries, retries + 1);
                 } else {
                     throw err;
                 }
@@ -217,24 +236,30 @@ export class BluetoothHelper {
     private getCharacteristicsImpl(
         server: BluetoothRemoteGATTServer,
         service: BluetoothRemoteGATTService,
-        characteristicUuid: BluetoothCharacteristicUUID | undefined,
+        characteristicName: GattCharacteristicName | undefined,
         maxRetries = 5,
         retries = 0,
-    ): Observable<BluetoothRemoteGATTCharacteristic[]> {
-        this.logger.info(`Getting Characteristics (${service.uuid})...`);
+    ): Observable<GattCharacteristic[]> {
+        this.logger.info(`Getting Characteristics (${characteristicName})...`);
+
+        const uuid = characteristicName != null ? GattCharacteristicId[characteristicName] : undefined;
 
         const characteristicObservable =
-            characteristicUuid != null
-                ? from(service.getCharacteristic(characteristicUuid)).pipe(map((characteristic) => [characteristic]))
+            uuid != null
+                ? from(service.getCharacteristic(uuid)).pipe(map((characteristic) => [characteristic]))
                 : from(service.getCharacteristics());
 
         return characteristicObservable.pipe(
+            map((characteristics) => characteristics.map(mapGattCharacteristic)),
             tap((characteristics) =>
-                this.logger.info(`Characteristics loaded (${service.uuid}/${characteristicUuid})`, characteristics),
+                this.logger.info(
+                    `Characteristics loaded for service (${printStringArray(characteristics.map((c) => c.name))})`,
+                    characteristics,
+                ),
             ),
             catchError((err) => {
-                if (characteristicUuid != null) {
-                    this.logger.error(`Error getting characteristic '${characteristicUuid}' (${retries})`, err);
+                if (characteristicName != null) {
+                    this.logger.error(`Error getting characteristic '${characteristicName}' (${retries})`, err);
                 } else {
                     this.logger.error(`Error getting characteristics (${retries})`, err);
                 }
@@ -242,12 +267,17 @@ export class BluetoothHelper {
                 if (!server.connected) {
                     return this.connectServerImpl(server.device, maxRetries, retries + 1).pipe(
                         mergeMap((newConnectionServer) =>
-                            this.getServiceImpl(newConnectionServer, service.uuid, maxRetries, retries + 1).pipe(
+                            this.getServiceImpl(
+                                newConnectionServer,
+                                extract16Bit(service.uuid),
+                                maxRetries,
+                                retries + 1,
+                            ).pipe(
                                 mergeMap((newConnectionService) =>
                                     this.getCharacteristicsImpl(
                                         newConnectionServer,
-                                        newConnectionService[0],
-                                        characteristicUuid,
+                                        newConnectionService[0].gatt,
+                                        characteristicName,
                                         maxRetries,
                                         retries + 1,
                                     ),
@@ -256,11 +286,46 @@ export class BluetoothHelper {
                         ),
                     );
                 } else if (retries < maxRetries) {
-                    return this.getCharacteristicsImpl(server, service, characteristicUuid, maxRetries, retries + 1);
+                    return this.getCharacteristicsImpl(server, service, characteristicName, maxRetries, retries + 1);
                 } else {
                     throw err;
                 }
             }),
         );
     }
+}
+
+export function testFunction() {
+    const helper = getInstance();
+
+    const service = helper.getService({} as any, 'Heart Rate');
+    const characteristic = helper.getCharacteristic({} as any, {} as any, 'Heart Rate Measurement');
+
+    return { service, characteristic };
+}
+
+function isServiceWithId<T extends GattServiceName>(name: T): (value: GattService) => value is GattService<T> {
+    return ((value: GattService) => value.name === name) as (value: GattService) => value is GattService<T>;
+}
+
+function isCharacteristicWithId<T extends GattCharacteristicName>(
+    name: T,
+): (value: GattCharacteristic) => value is GattCharacteristic<T> {
+    return ((value: GattCharacteristic) => value.name === name) as (
+        value: GattCharacteristic,
+    ) => value is GattCharacteristic<T>;
+}
+
+function mapGattService(gatt: BluetoothRemoteGATTService): GattService {
+    const id = extract16Bit(gatt.uuid);
+    return { gatt, id, name: GattServiceId[id] as GattServiceName };
+}
+
+function mapGattCharacteristic(gatt: BluetoothRemoteGATTCharacteristic): GattCharacteristic {
+    const id = extract16Bit(gatt.uuid);
+    return { gatt, id, name: GattCharacteristicId[id] as GattCharacteristicName };
+}
+
+function printStringArray(values: (string | undefined)[]): string {
+    return values.map((value) => `'${value}'`).join(', ');
 }
