@@ -1,14 +1,7 @@
 import { Component } from '@angular/core';
 import { firstValueFrom, from, lastValueFrom } from 'rxjs';
 import { mergeMap, toArray } from 'rxjs/operators';
-import {
-    BluetoothHelper,
-    DisplayValue,
-    GattService,
-    getCharacteristicName,
-    getServiceName,
-    getServices,
-} from '../../src';
+import { BluetoothHelper, GattService, getCharacteristicName, getServiceName, getServices } from '../../src';
 
 type Characteristic = {
     displayName: string;
