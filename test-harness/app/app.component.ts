@@ -27,8 +27,6 @@ export class AppComponent {
 
     public readonly services = getServices();
 
-    private readonly textDecoder = new TextDecoder();
-
     private _device: BluetoothDevice | undefined;
 
     public get device(): BluetoothDevice | undefined {
@@ -108,13 +106,6 @@ export class AppComponent {
     }
 
     private convertDataView(view: DataView): number[] | string {
-        const validString = /\w/;
-        const stringAttempt = this.textDecoder.decode(view);
-
-        if (validString.test(stringAttempt)) {
-            return stringAttempt;
-        }
-
         const byteValues: number[] = [];
 
         for (let i = 0; i < view.byteLength; i++) {

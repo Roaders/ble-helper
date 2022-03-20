@@ -295,25 +295,14 @@ export class BluetoothHelper {
     }
 }
 
-export function testFunction() {
-    const helper = getInstance();
-
-    const service = helper.getService({} as any, 'Heart Rate');
-    const characteristic = helper.getCharacteristic({} as any, {} as any, 'Heart Rate Measurement');
-
-    return { service, characteristic };
-}
-
 function isServiceWithId<T extends GattServiceName>(name: T): (value: GattService) => value is GattService<T> {
-    return ((value: GattService) => value.name === name) as (value: GattService) => value is GattService<T>;
+    return (value: GattService): value is GattService<T> => value.name === name;
 }
 
 function isCharacteristicWithId<T extends GattCharacteristicName>(
     name: T,
 ): (value: GattCharacteristic) => value is GattCharacteristic<T> {
-    return ((value: GattCharacteristic) => value.name === name) as (
-        value: GattCharacteristic,
-    ) => value is GattCharacteristic<T>;
+    return (value: GattCharacteristic): value is GattCharacteristic<T> => value.name === name;
 }
 
 function mapGattService(gatt: BluetoothRemoteGATTService): GattService {
