@@ -1,6 +1,6 @@
 {
     "name": "ble-helper",
-    "version": "1.2.0",
+    "version": "0.2.0",
     "description": "Provides functionality to help connecting to Bluetooth devices",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
