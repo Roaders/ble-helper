@@ -4,7 +4,7 @@ Helps to help connecting to Bluetooth devices
 
 ## Test Harness
 
-THe test harness can be seen running [here](https://roaders.github.io/ble-helper/) where you can try connecting to your bluetooth devices.
+The test harness can be seen running [here](https://roaders.github.io/ble-helper/) where you can try connecting to your bluetooth devices.
 
 ## Installation
 
