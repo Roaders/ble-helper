@@ -13,9 +13,9 @@ export function getInstance(): BluetoothHelper {
 
 export const defaultStrategies: [ICharacteristicConversionStrategy<'Device Name', string>] = [new DeviceNameStrategy()];
 
-export type testName = StrategyReturnType<typeof defaultStrategies, 'Device Name'>;
-export type testNameTwo = StrategyReturnType<typeof defaultStrategies, 'Manufacturer Name String'>;
-export type testNameThree = StrategyReturnType<typeof defaultStrategies, 'Active Preset Index'>;
+// export type testName = StrategyReturnType<typeof defaultStrategies, 'Device Name'>;
+// export type testNameTwo = StrategyReturnType<typeof defaultStrategies, 'Manufacturer Name String'>;
+// export type testNameThree = StrategyReturnType<typeof defaultStrategies, 'Active Preset Index'>;
 
 class BluetoothHelperBase<TStrategyLookup extends StrategyList> {
     private readonly lookup?: TStrategyLookup;
