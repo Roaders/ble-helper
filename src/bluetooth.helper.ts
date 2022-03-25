@@ -1,9 +1,9 @@
 import { Injectable, get } from '@morgan-stanley/needle';
 import { from, Observable, of } from 'rxjs';
 import { catchError, map, mergeMap, switchMap, tap } from 'rxjs/operators';
-import { GattCharacteristic } from '.';
+import { DeviceNameStrategy, GattCharacteristic, ICharacteristicConversionStrategy } from '.';
 import { GattCharacteristicId, GattCharacteristicName, GattServiceId, GattServiceName } from './constants';
-import { GattService } from './contracts';
+import { StrategyList, GattService, StrategyReturnType } from './contracts';
 import { Logger } from './logger';
 import { extract16Bit } from './uuid.helper';
 
@@ -11,9 +11,16 @@ export function getInstance(): BluetoothHelper {
     return get(BluetoothHelper);
 }
 
-@Injectable()
-export class BluetoothHelper {
-    constructor(private logger: Logger) {}
+export const defaultStrategies: [ICharacteristicConversionStrategy<'Device Name', string>] = [new DeviceNameStrategy()];
+
+export type testName = StrategyReturnType<typeof defaultStrategies, 'Device Name'>;
+export type testNameTwo = StrategyReturnType<typeof defaultStrategies, 'Manufacturer Name String'>;
+export type testNameThree = StrategyReturnType<typeof defaultStrategies, 'Active Preset Index'>;
+
+class BluetoothHelperBase<TStrategyLookup extends StrategyList> {
+    private readonly lookup?: TStrategyLookup;
+
+    constructor(private logger: Logger, private readonly _lookup?: TStrategyLookup) {}
 
     /**
      * Request a bluetooth device. This will launch the browser device picking dialog for a user to choose device
@@ -95,22 +102,24 @@ export class BluetoothHelper {
      * @param characteristic
      * @returns
      */
-    public getNotifications(characteristic: BluetoothRemoteGATTCharacteristic): Observable<DataView> {
-        characteristic.startNotifications();
+    public getNotifications<T extends GattCharacteristicName>(
+        characteristic: GattCharacteristic<T>,
+    ): Observable<StrategyReturnType<TStrategyLookup, T>> {
+        characteristic.gatt.startNotifications();
 
         return new Observable((observer) => {
             function handleEvent() {
-                if (characteristic.value != null) {
-                    observer.next(characteristic.value);
+                if (characteristic.gatt.value != null) {
+                    observer.next(characteristic.gatt.value as any);
                 }
             }
             this.logger.info(`Starting Notifications`, characteristic);
-            characteristic.addEventListener('characteristicvaluechanged', handleEvent);
+            characteristic.gatt.addEventListener('characteristicvaluechanged', handleEvent);
 
             return {
                 unsubscribe: () => {
                     this.logger.info(`Unsubscribe from Notifications`, characteristic);
-                    characteristic.removeEventListener('characteristicvaluechanged', handleEvent);
+                    characteristic.gatt.removeEventListener('characteristicvaluechanged', handleEvent);
                 },
             };
         });
@@ -258,6 +267,10 @@ export class BluetoothHelper {
                 ),
             ),
             catchError((err) => {
+                if (err.name === 'NotFoundError') {
+                    return of([]);
+                }
+
                 if (characteristicName != null) {
                     this.logger.error(`Error getting characteristic '${characteristicName}' (${retries})`, err);
                 } else {
@@ -292,6 +305,13 @@ export class BluetoothHelper {
                 }
             }),
         );
+    }
+}
+
+@Injectable()
+export class BluetoothHelper extends BluetoothHelperBase<typeof defaultStrategies> {
+    constructor(logger: Logger) {
+        super(logger, defaultStrategies);
     }
 }
 

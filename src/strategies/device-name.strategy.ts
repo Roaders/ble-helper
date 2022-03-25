@@ -1,11 +1,11 @@
 import { ICharacteristicConversionStrategy } from '../contracts';
 
-export class DeviceInfoStrategy implements ICharacteristicConversionStrategy {
+export class DeviceNameStrategy implements ICharacteristicConversionStrategy<'Device Name', string> {
     canHandle(): boolean {
         throw new Error('Method not implemented.');
     }
 
-    handle(): string {
+    convert(): string {
         throw new Error('Method not implemented.');
     }
 }

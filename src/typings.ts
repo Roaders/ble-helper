@@ -1,3 +1,5 @@
+import { StrategyList } from './contracts';
+
 enum SomeEnumIds {
     nameOne = 0,
     nameTwo = 1,
@@ -18,20 +20,25 @@ export interface ConversionStrategy<T extends EnumNames = EnumNames, R = unknown
 const strategyOne = {} as ConversionStrategy<'nameOne', string>;
 const strategyTwo = {} as ConversionStrategy<'nameTwo', number>;
 
+// const strategies: [ConversionStrategy<'nameOne', string>, ConversionStrategy<'nameTwo', number>] = [
+//     strategyOne,
+//     strategyTwo,
+// ];
+
 const strategies = [strategyOne, strategyTwo] as const;
 
-//type StrategyReturnType<TLookup extends readonly [...ConversionStrategy[]], T extends EnumNames> = TLookup[0] extends ConversionStrategy<T, infer R> ? R : unknown;
-type StrategyReturnType<TLookup extends Array<unknown> | ReadonlyArray<unknown>, T extends EnumNames> = ((
-    ...xs: TLookup
-) => unknown) extends (h: infer Head, ...ts: infer Tail) => unknown
+type StrategyReturnType<TLookup extends StrategyList, T extends EnumNames> = ((...xs: TLookup) => unknown) extends (
+    h: infer Head,
+    ...ts: infer Tail
+) => unknown
     ? ((h: Head) => unknown) extends (h: ConversionStrategy<T, infer R>) => unknown
         ? R
-        : ((h: Head, ...ts: Tail) => unknown) extends (h: unknown, ...tail: unknown[]) => unknown
+        : ((h: unknown, ...ts: unknown[]) => unknown) extends (h: Head, ...tail: Tail) => unknown
         ? StrategyReturnType<Tail, T>
         : Date
     : boolean;
 
-class SomeClass<TypeLookup extends ConversionStrategy[] | ReadonlyArray<ConversionStrategy>> {
+class SomeClass<TypeLookup extends StrategyList> {
     constructor(_lookup: TypeLookup) {
         console.log(`Constructing`);
     }
@@ -43,8 +50,8 @@ class SomeClass<TypeLookup extends ConversionStrategy[] | ReadonlyArray<Conversi
 
 const classInstance = new SomeClass(strategies); // this should be a compile error as EnumValuesThree contains invalid property names
 
-const resultOne = classInstance.getValue('nameOne'); // should be typed as string
-const resultTwo = classInstance.getValue('nameTwo'); // should be typed as number
+const resultOne: string = classInstance.getValue('nameOne'); // should be typed as string
+const resultTwo: number = classInstance.getValue('nameTwo'); // should be typed as number
 const resultThree = classInstance.getValue('nameThree'); // should be typed as number
 
 console.log({ resultOne, resultTwo, resultThree });

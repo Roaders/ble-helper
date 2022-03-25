@@ -4,3 +4,4 @@ export * from './logger';
 export * from './type-guards';
 export * from './constants';
 export * from './uuid.helper';
+export * from './strategies';
