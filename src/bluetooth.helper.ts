@@ -20,7 +20,7 @@ export function getInstance(): BluetoothHelper {
     return get(BluetoothHelper);
 }
 
-export const defaultCOnversionStrategies = [
+export const defaultConversionStrategies = [
     new ManufacturerNameStrategy(),
     new ModelNumberStrategy(),
     new SerialNumberStrategy(),
@@ -352,9 +352,9 @@ class BluetoothHelperBase<TStrategyLookup extends StrategyList> {
 }
 
 @Injectable()
-export class BluetoothHelper extends BluetoothHelperBase<typeof defaultCOnversionStrategies> {
+export class BluetoothHelper extends BluetoothHelperBase<typeof defaultConversionStrategies> {
     constructor(logger: Logger) {
-        super(logger, defaultCOnversionStrategies);
+        super(logger, defaultConversionStrategies);
     }
 }
 
