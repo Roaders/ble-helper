@@ -69,14 +69,20 @@ platformBrowserDynamic(getRegisteredTypesWithFactories())
 ## Usage
 
 ```typescript
-import { getInstance, GattService, GattCharacteristic } from "ble-helper";
+import { getInstance, GattServiceId } from 'ble-helper';
+import { firstValueFrom } from 'rxjs';
 
 const helper = getInstance();
 
 async function getHeartRateUpdates() {
     // request device. This will open a dialog in the browser where the user will pick the device.
     // Specify an array of what services you want.
-    const device = await firstValueFrom(helper.requestDevice([GattService['Heart Rate']]));
+    const device = await firstValueFrom(
+        helper.requestDevice({
+            filters: [{ services: [GattServiceId['Heart Rate']] }], // requests any heart rate devices
+            optionalServices: [GattServiceId['Battery'], GattServiceId['Device Information']], // allows us to access other services on the same device like battery level and device name
+        }),
+    );
 
     if (device == null) {
         // User cancelled the dialog, no device selected.
@@ -87,38 +93,75 @@ async function getHeartRateUpdates() {
     const server = await firstValueFrom(helper.connectServer(device));
 
     // Request the service we are interested from server
-    const service = await firstValueFrom(helper.getService(server, GattService['Heart Rate']));
+    const service = await firstValueFrom(helper.getService(server, 'Battery'));
+
+    if (service == null) {
+        // could not find specified service
+        return;
+    }
 
     // Request characteristic we are interested in from service
-    const characteristic = await firstValueFrom(
-        helper.getCharacteristic(server, service, GattCharacteristic['Heart Rate Measurement']),
-    );
+    const characteristic = await firstValueFrom(helper.getCharacteristic(server, service.gatt, 'Battery Level'));
+
+    if (characteristic == null) {
+        // could not find specified characteristic
+        return;
+    }
+
+    const initialValue = await helper.readValue(characteristic);
+
+    console.log(`Initial battery level: ${initialValue}`);
 
     // Subscribe to be notified of these values changing
     helper.getNotifications(characteristic).subscribe((value) => {
-        console.log(parseValue(value));
+        console.log(`Battery level is: ${value}`);
     });
 }
 ```
 `BluetoothHelper` returns observables but I've used async above to make it a bit clearer what is going on.
 
-If you want to connect to multiple different services on your device these services must be passed as `optionalServices` in a `RequestDeviceOptions` object:
+The above example uses one of the default conversion strategies that are included with `ble-helper`. Any characteristics that do not have registered strategies will just return a `DataView` object when reading or subscribing to updates.
 
-```typescript
-const device = await lastValueFrom(
-    this.helper.requestDevice({
-        filters: [{ services: [GattService['Heart Rate']] }],
-        optionalServices: [
-            GattService.Battery,
-            GattService['Generic Access'],
-            GattService['Generic Attribute'],
-            GattService['Device Information'],
-        ],
-    }),
-);
+## Strategies
+
+By default the following characteristic conversion strategies are provided:
+
+ * Battery Level
+ * Manufacturer Name String
+ * Model Number String
+ * Serial Number String
+ * Hardware Revision String
+ * Firmware Revision String
+ * Software Revision String
+ * Device Name
+
+To covert `DataView` objects for other characteristics new strategies must be provided to handle them:
+
+```ts
+class HeartRateConversionStrategy implements ICharacteristicConversionStrategy<'Heart Rate Measurement', number> {
+    public name = 'Heart Rate Measurement' as const;
+
+    canHandle(characteristic: GattCharacteristic<'Heart Rate Measurement'>): boolean {
+        return characteristic.name === this.name;
+    }
+
+    convert(_characteristic: GattCharacteristic<'Heart Rate Measurement'>, value: DataView): number {
+        const hearRate: number = paraseHeartRate(value); // To Be Implemented
+
+        return hearRate;
+    }
+}
 ```
 
-The `parseValue` function will need to be written for each different BLuetooth characteristic based on the documents [here](https://www.bluetooth.com/specifications/specs/).
+any strategies that you create must then be passed to the `BluetoothHelper` by using the `BluetoothHelperFactory`:
+
+```ts
+const factory: BlueToothHelperFactory = get(BlueToothHelperFactory);
+
+const helper = factory.createWithStrategies(tuple(new HeartRateConversionStrategy()));
+```
+
+in this case `helper.readValue()` will return a value typed as a number as this is what the strategy returns. 
 
 ## Notes
 
