@@ -37,6 +37,8 @@ import { getInstance } from "ble-helper";
 const bluetoothHelper = getInstance();
 ```
 
+`reflect-metadata` will need to be installed and imported for this to work. See [needle docs](https://github.com/morganstanley/needle#polyfills) for more details.
+
 ### Constructor Injection
 
 `BluetoothHelper` is decorated so metadata about it's constructor parameters is recorded so you can use it in IOC environments:
@@ -61,6 +63,8 @@ platformBrowserDynamic(getRegisteredTypesWithFactories())
     .bootstrapModule(AppModule)
     .catch((err) => console.error(err));
 ```
+
+`reflect-metadata` will need to be installed and imported for this to work. See [needle docs](https://github.com/morganstanley/needle#polyfills) for more details.
 
 ## Usage
 

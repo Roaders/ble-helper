@@ -31,23 +31,25 @@ export interface ICharacteristicConversionStrategy<
     TCharacteristic extends GattCharacteristicName = GattCharacteristicName,
     TReturnType = unknown,
 > {
+    name: TCharacteristic;
     canHandle(characteristic: GattCharacteristic<TCharacteristic>): boolean;
     convert(characteristic: GattCharacteristic<TCharacteristic>, value: DataView): TReturnType;
 }
 
-export type StrategyList =
-    | [ICharacteristicConversionStrategy, ...ICharacteristicConversionStrategy[]]
-    | readonly [ICharacteristicConversionStrategy, ...ICharacteristicConversionStrategy[]];
+/**
+ * Creates a tuple
+ */
+export const tuple = <T extends any[]>(...args: T): T => args;
+
+export type StrategyList = [...ICharacteristicConversionStrategy[]];
 
 export type StrategyReturnType<
     TLookup extends StrategyList,
     T extends GattCharacteristicName,
 > = unknown extends StrategyReturnTypeImpl<TLookup, T> ? DataView : StrategyReturnTypeImpl<TLookup, T>;
 
-type TupleOrReadOnly = [any, ...any[]] | readonly [any, ...any[]];
-
 // Removes head from list and passes it to HeadStrategyReturnTypeImpl
-type StrategyReturnTypeImpl<TStrategyList extends TupleOrReadOnly, T extends GattCharacteristicName> = ((
+type StrategyReturnTypeImpl<TStrategyList extends [...any[]], T extends GattCharacteristicName> = ((
     ...characteristicList: TStrategyList
 ) => unknown) extends (h: infer Head, ...tt: any[]) => unknown
     ? HeadStrategyReturnTypeImpl<Head, TStrategyList, T>
@@ -56,13 +58,13 @@ type StrategyReturnTypeImpl<TStrategyList extends TupleOrReadOnly, T extends Gat
 // If Strategy type matches T returns that strategy, if not passes list to TailStrategyReturnTypeImpl
 type HeadStrategyReturnTypeImpl<
     TStrategy,
-    TStrategyList extends TupleOrReadOnly,
+    TStrategyList extends [...any[]],
     T extends GattCharacteristicName,
 > = TStrategy extends ICharacteristicConversionStrategy<T, infer R> ? R : TailStrategyReturnTypeImpl<TStrategyList, T>;
 
 // Removes Head from list and if a tail exists passes it to StrategyReturnTypeImpl
 type TailStrategyReturnTypeImpl<
-    TStrategyListTail extends TupleOrReadOnly,
+    TStrategyListTail extends [...any[]],
     T extends GattCharacteristicName,
 > = TStrategyListTail extends [any, infer TailHead, ...infer LTail]
     ? StrategyReturnTypeImpl<[TailHead, ...LTail], T>

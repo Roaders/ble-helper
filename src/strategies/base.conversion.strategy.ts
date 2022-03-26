@@ -6,10 +6,10 @@ export abstract class BaseStringValueConversionStrategy<T extends GattCharacteri
 {
     private decoder: TextDecoder = new TextDecoder();
 
-    constructor(private _characteristicName: T) {}
+    constructor(public readonly name: T) {}
 
     canHandle(characteristic: GattCharacteristic): boolean {
-        return characteristic.name === this._characteristicName;
+        return characteristic.name === this.name;
     }
 
     convert(_characteristic: GattCharacteristic, value: DataView): string {
@@ -20,10 +20,10 @@ export abstract class BaseStringValueConversionStrategy<T extends GattCharacteri
 export abstract class BaseNumericValueConversionStrategy<T extends GattCharacteristicName>
     implements ICharacteristicConversionStrategy<T, number>
 {
-    constructor(private _characteristicName: T, private bytes: 8 | 16 | 32) {}
+    constructor(public readonly name: T, private bytes: 8 | 16 | 32) {}
 
     canHandle(characteristic: GattCharacteristic): boolean {
-        return characteristic.name === this._characteristicName;
+        return characteristic.name === this.name;
     }
 
     convert(_characteristic: GattCharacteristic, value: DataView): number {

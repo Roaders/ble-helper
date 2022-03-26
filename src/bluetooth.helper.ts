@@ -2,7 +2,7 @@ import { Injectable, get } from '@morgan-stanley/needle';
 import { from, Observable, of } from 'rxjs';
 import { catchError, map, mergeMap, switchMap, tap } from 'rxjs/operators';
 import { GattCharacteristicId, GattCharacteristicName, GattServiceId, GattServiceName } from './constants';
-import { StrategyList, GattService, StrategyReturnType, GattCharacteristic } from './contracts';
+import { StrategyList, GattService, StrategyReturnType, GattCharacteristic, tuple } from './contracts';
 import { Logger } from './logger';
 import {
     BatteryLevelStrategy,
@@ -20,21 +20,46 @@ export function getInstance(): BluetoothHelper {
     return get(BluetoothHelper);
 }
 
-export const defaultConversionStrategies = [
+export const defaultConversionStrategies = tuple(
+    new DeviceNameStrategy(),
     new ManufacturerNameStrategy(),
     new ModelNumberStrategy(),
     new SerialNumberStrategy(),
     new HardwareRevisionStrategy(),
     new FirmwareRevisionStrategy(),
     new SoftwareRevisionStrategy(),
-    new DeviceNameStrategy(),
     new BatteryLevelStrategy(),
-] as const;
+);
 
-class BluetoothHelperBase<TStrategyLookup extends StrategyList> {
-    private readonly lookup?: TStrategyLookup;
+export class BlueToothHelperFactory {
+    constructor(private logger: Logger) {}
 
-    constructor(private logger: Logger, private readonly strategyList?: TStrategyLookup) {}
+    /**
+     * Create BluetoothHelper with a different logging implementation
+     * @param logger
+     * @returns BluetoothHelper
+     */
+    create(logger: Logger): BluetoothHelper {
+        return new BluetoothHelper(logger);
+    }
+
+    /**
+     * Create BluetoothHelper with a different set of strategies
+     * @param logger
+     * @returns BluetoothHelper
+     */
+    createWithStrategies<TStrategyList extends StrategyList>(
+        strategies: TStrategyList,
+        logger?: Logger,
+    ): BluetoothHelperBase<TStrategyList> {
+        return new BluetoothHelperBase(logger ?? this.logger, strategies) as any;
+    }
+}
+
+class BluetoothHelperBase<TStrategyList extends StrategyList> {
+    private readonly lookup?: TStrategyList;
+
+    constructor(private logger: Logger, private readonly strategyList?: TStrategyList) {}
 
     /**
      * Request a bluetooth device. This will launch the browser device picking dialog for a user to choose device
@@ -117,7 +142,7 @@ class BluetoothHelperBase<TStrategyLookup extends StrategyList> {
      */
     public async readValue<T extends GattCharacteristicName>(
         characteristic: GattCharacteristic<T>,
-    ): Promise<StrategyReturnType<TStrategyLookup, T>> {
+    ): Promise<StrategyReturnType<TStrategyList, T>> {
         const value = await characteristic.gatt.readValue();
 
         return this.convertValue(characteristic, value);
@@ -129,7 +154,7 @@ class BluetoothHelperBase<TStrategyLookup extends StrategyList> {
      */
     public getNotifications<T extends GattCharacteristicName>(
         characteristic: GattCharacteristic<T>,
-    ): Observable<StrategyReturnType<TStrategyLookup, T>> {
+    ): Observable<StrategyReturnType<TStrategyList, T>> {
         characteristic.gatt.startNotifications();
 
         return new Observable((observer) => {
@@ -176,7 +201,7 @@ class BluetoothHelperBase<TStrategyLookup extends StrategyList> {
     private convertValue<T extends GattCharacteristicName>(
         characteristic: GattCharacteristic<T>,
         value: DataView,
-    ): StrategyReturnType<TStrategyLookup, T> {
+    ): StrategyReturnType<TStrategyList, T> {
         console.log(`COnvert Value: ${characteristic.name}`);
 
         const matchingStrategy = this.strategyList?.find((strategy) => strategy.canHandle(characteristic));
@@ -184,10 +209,10 @@ class BluetoothHelperBase<TStrategyLookup extends StrategyList> {
         if (matchingStrategy != null) {
             const converted = matchingStrategy.convert(characteristic, value);
 
-            return converted as StrategyReturnType<TStrategyLookup, T>;
+            return converted as StrategyReturnType<TStrategyList, T>;
         }
 
-        return value as StrategyReturnType<TStrategyLookup, T>;
+        return value as StrategyReturnType<TStrategyList, T>;
     }
 
     private requestDeviceImpl(

@@ -150,30 +150,5 @@ export class AppComponent {
                 serviceName: getServiceName(characteristic.gatt.service.uuid),
                 displayName: getCharacteristicName(characteristic.gatt.uuid),
             }));
-
-        // Test code
-
-        const infoService = await firstValueFrom(this.helper.getService(gattServer, 'Device Information'));
-
-        if (infoService == null) {
-            return;
-        }
-
-        const deviceNameCharacteristic = await firstValueFrom(
-            this.helper.getCharacteristic(gattServer, infoService.gatt, 'Device Name'),
-        );
-
-        const manufacturerNameCharacteristic = await firstValueFrom(
-            this.helper.getCharacteristic(gattServer, infoService.gatt, 'Manufacturer Name String'),
-        );
-
-        if (deviceNameCharacteristic == null || manufacturerNameCharacteristic == null) {
-            return;
-        }
-
-        const deviceName = await firstValueFrom(this.helper.getNotifications(deviceNameCharacteristic));
-        const manufacturerName = await firstValueFrom(this.helper.getNotifications(manufacturerNameCharacteristic));
-
-        console.log({ deviceName, manufacturerName });
     }
 }
