@@ -50,5 +50,13 @@
     },
     "dependencies": {
         "@morgan-stanley/needle": "^0.3.13"
-    }
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Roaders/ble-helper.git"
+    },
+    "bugs": {
+        "url": "https://github.com/Roaders/ble-helper/issues"
+    },
+    "homepage": "https://github.com/Roaders/ble-helper#readme"
 }
