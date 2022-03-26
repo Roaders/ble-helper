@@ -112,7 +112,7 @@ export class AppComponent {
     public async notifyCharacteristic(characteristic: Characteristic) {
         this.helper
             .getNotifications(characteristic)
-            .subscribe((value) => (characteristic.notifyValues = this.convertDataView(value as any)));
+            .subscribe((value) => (characteristic.notifyValues = this.convertDataView(value)));
     }
 
     private convertDataView(value: unknown): unknown {

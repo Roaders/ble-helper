@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { GattCharacteristicId, GattCharacteristicName, GattServiceId, GattServiceName } from './constants';
-import { DeviceNameStrategy } from './strategies';
 
 export enum LogLevel {
     fatal = 5,
