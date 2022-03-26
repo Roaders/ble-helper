@@ -31,6 +31,7 @@ export const defaultConversionStrategies = tuple(
     new BatteryLevelStrategy(),
 );
 
+@Injectable()
 export class BlueToothHelperFactory {
     constructor(private logger: Logger) {}
 
@@ -52,7 +53,7 @@ export class BlueToothHelperFactory {
         strategies: TStrategyList,
         logger?: Logger,
     ): BluetoothHelperWithStrategies<TStrategyList> {
-        return new BluetoothHelperWithStrategies(logger ?? this.logger, strategies) as any;
+        return new BluetoothHelperWithStrategies(logger ?? this.logger, strategies);
     }
 }
 
