@@ -51,12 +51,12 @@ export class BlueToothHelperFactory {
     createWithStrategies<TStrategyList extends StrategyList>(
         strategies: TStrategyList,
         logger?: Logger,
-    ): BluetoothHelperBase<TStrategyList> {
-        return new BluetoothHelperBase(logger ?? this.logger, strategies) as any;
+    ): BluetoothHelperWithStrategies<TStrategyList> {
+        return new BluetoothHelperWithStrategies(logger ?? this.logger, strategies) as any;
     }
 }
 
-class BluetoothHelperBase<TStrategyList extends StrategyList> {
+export class BluetoothHelperWithStrategies<TStrategyList extends StrategyList> {
     private readonly lookup?: TStrategyList;
 
     constructor(private logger: Logger, private readonly strategyList?: TStrategyList) {}
@@ -377,7 +377,7 @@ class BluetoothHelperBase<TStrategyList extends StrategyList> {
 }
 
 @Injectable()
-export class BluetoothHelper extends BluetoothHelperBase<typeof defaultConversionStrategies> {
+export class BluetoothHelper extends BluetoothHelperWithStrategies<typeof defaultConversionStrategies> {
     constructor(logger: Logger) {
         super(logger, defaultConversionStrategies);
     }
