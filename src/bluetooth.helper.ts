@@ -65,10 +65,7 @@ export class BluetoothHelperWithStrategies<TStrategyList extends StrategyList> {
     /**
      * Request a bluetooth device. This will launch the browser device picking dialog for a user to choose device
      */
-    public requestDevice(
-        services: [GattServiceId, ...GattServiceId[]] | RequestDeviceOptions,
-        maxRetries = 5,
-    ): Observable<BluetoothDevice | undefined> {
+    public requestDevice(services: RequestDeviceOptions, maxRetries = 5): Observable<BluetoothDevice | undefined> {
         this.logger.info('Requesting Device...', services);
 
         const options: RequestDeviceOptions = Array.isArray(services)
