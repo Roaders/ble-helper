@@ -3,7 +3,7 @@
 import { DisplayValue } from './contracts';
 import { isNumber } from './type-guards';
 
-export enum GattService {
+export enum GattServiceId {
     'Generic Access' = 0x1800,
     'Generic Attribute' = 0x1801,
     'Immediate Alert' = 0x1802,
@@ -68,19 +68,21 @@ export enum GattService {
     'TMAS Service' = 0x1855,
 }
 
+export type GattServiceName = keyof typeof GattServiceId;
+
 export function getServices(): DisplayValue<number>[] {
-    return Object.values(GattService)
+    return Object.values(GattServiceId)
         .filter(isNumber)
-        .map((value) => ({ value, display: GattService[value] }));
+        .map((value) => ({ value, display: GattServiceId[value] }));
 }
 
 export function getCharacteristics(): DisplayValue<number>[] {
-    return Object.values(GattCharacteristic)
+    return Object.values(GattCharacteristicId)
         .filter(isNumber)
-        .map((value) => ({ value, display: GattService[value] }));
+        .map((value) => ({ value, display: GattServiceId[value] }));
 }
 
-export enum GattCharacteristic {
+export enum GattCharacteristicId {
     'Device Name' = 0x2a00,
     'Appearance' = 0x2a01,
     'Peripheral Privacy Flag' = 0x2a02,
@@ -484,3 +486,5 @@ export enum GattCharacteristic {
     'Hearing Aid Preset Control Point' = 0x2bdb,
     'Active Preset Index' = 0x2bdc,
 }
+
+export type GattCharacteristicName = keyof typeof GattCharacteristicId;

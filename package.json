@@ -13,7 +13,7 @@
         "lint": "eslint . --ext .ts,.d.ts,.js",
         "lint:fix": "eslint . --ext .ts,.d.ts,.js --fix",
         "verify-release": "concurrently --kill-others-on-fail npm:build npm:lint npm:build:test-harness",
-        "prepublishOnly": "npm run verify-release"
+        "prepublishOnly": "npm run clean && npm run verify-release"
     },
     "author": "Giles Roadnight",
     "license": "ISC",
