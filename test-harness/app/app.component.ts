@@ -6,17 +6,19 @@ import {
     GattCharacteristic,
     GattCharacteristicId,
     GattServiceId,
+    getCharacteristicName,
     getServiceName,
     getServices,
+    isDataView,
 } from '../../src';
 
 type Characteristic = {
     id: GattCharacteristicId;
-    displayName?: string;
-    serviceName?: string;
+    displayName: string;
+    serviceName: string;
     gatt: BluetoothRemoteGATTCharacteristic;
-    notifyValues?: string | number[];
-    readValues?: string | number[];
+    notifyValues?: unknown;
+    readValues?: unknown;
 };
 
 const defaultOptionalServices = [
@@ -102,7 +104,7 @@ export class AppComponent {
     }
 
     public async readCharacteristic(characteristic: Characteristic) {
-        const value = await characteristic.gatt.readValue();
+        const value = await this.helper.readValue(characteristic);
 
         characteristic.readValues = this.convertDataView(value);
     }
@@ -113,14 +115,18 @@ export class AppComponent {
             .subscribe((value) => (characteristic.notifyValues = this.convertDataView(value as any)));
     }
 
-    private convertDataView(view: DataView): number[] | string {
-        const byteValues: number[] = [];
+    private convertDataView(value: unknown): unknown {
+        if (isDataView(value)) {
+            const byteValues: number[] = [];
 
-        for (let i = 0; i < view.byteLength; i++) {
-            byteValues.push(view.getUint8(i));
+            for (let i = 0; i < value.byteLength; i++) {
+                byteValues.push(value.getUint8(i));
+            }
+
+            return byteValues;
         }
 
-        return byteValues;
+        return value;
     }
 
     private async loadServices(device: BluetoothDevice) {
@@ -142,31 +148,32 @@ export class AppComponent {
             .map((characteristic) => ({
                 ...characteristic,
                 serviceName: getServiceName(characteristic.gatt.service.uuid),
+                displayName: getCharacteristicName(characteristic.gatt.uuid),
             }));
 
         // Test code
 
-        // const infoService = await firstValueFrom(this.helper.getService(gattServer, 'Device Information'));
+        const infoService = await firstValueFrom(this.helper.getService(gattServer, 'Device Information'));
 
-        // if (infoService == null) {
-        //     return;
-        // }
+        if (infoService == null) {
+            return;
+        }
 
-        // const deviceNameCharacteristic = await firstValueFrom(
-        //     this.helper.getCharacteristic(gattServer, infoService.gatt, 'Device Name'),
-        // );
+        const deviceNameCharacteristic = await firstValueFrom(
+            this.helper.getCharacteristic(gattServer, infoService.gatt, 'Device Name'),
+        );
 
-        // const manufacturerNameCharacteristic = await firstValueFrom(
-        //     this.helper.getCharacteristic(gattServer, infoService.gatt, 'Manufacturer Name String'),
-        // );
+        const manufacturerNameCharacteristic = await firstValueFrom(
+            this.helper.getCharacteristic(gattServer, infoService.gatt, 'Manufacturer Name String'),
+        );
 
-        // if (deviceNameCharacteristic == null || manufacturerNameCharacteristic == null) {
-        //     return;
-        // }
+        if (deviceNameCharacteristic == null || manufacturerNameCharacteristic == null) {
+            return;
+        }
 
-        // const deviceName = await firstValueFrom(this.helper.getNotifications(deviceNameCharacteristic));
-        // const manufacturerName = await firstValueFrom(this.helper.getNotifications(manufacturerNameCharacteristic));
+        const deviceName = await firstValueFrom(this.helper.getNotifications(deviceNameCharacteristic));
+        const manufacturerName = await firstValueFrom(this.helper.getNotifications(manufacturerNameCharacteristic));
 
-        // console.log({ deviceName, manufacturerName });
+        console.log({ deviceName, manufacturerName });
     }
 }

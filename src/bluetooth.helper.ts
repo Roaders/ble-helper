@@ -1,26 +1,40 @@
 import { Injectable, get } from '@morgan-stanley/needle';
 import { from, Observable, of } from 'rxjs';
 import { catchError, map, mergeMap, switchMap, tap } from 'rxjs/operators';
-import { DeviceNameStrategy, GattCharacteristic, ICharacteristicConversionStrategy } from '.';
 import { GattCharacteristicId, GattCharacteristicName, GattServiceId, GattServiceName } from './constants';
-import { StrategyList, GattService, StrategyReturnType } from './contracts';
+import { StrategyList, GattService, StrategyReturnType, GattCharacteristic } from './contracts';
 import { Logger } from './logger';
+import {
+    BatteryLevelStrategy,
+    DeviceNameStrategy,
+    FirmwareRevisionStrategy,
+    HardwareRevisionStrategy,
+    ManufacturerNameStrategy,
+    ModelNumberStrategy,
+    SerialNumberStrategy,
+    SoftwareRevisionStrategy,
+} from './strategies';
 import { extract16Bit } from './uuid.helper';
 
 export function getInstance(): BluetoothHelper {
     return get(BluetoothHelper);
 }
 
-export const defaultStrategies: [ICharacteristicConversionStrategy<'Device Name', string>] = [new DeviceNameStrategy()];
-
-// export type testName = StrategyReturnType<typeof defaultStrategies, 'Device Name'>;
-// export type testNameTwo = StrategyReturnType<typeof defaultStrategies, 'Manufacturer Name String'>;
-// export type testNameThree = StrategyReturnType<typeof defaultStrategies, 'Active Preset Index'>;
+export const defaultCOnversionStrategies = [
+    new ManufacturerNameStrategy(),
+    new ModelNumberStrategy(),
+    new SerialNumberStrategy(),
+    new HardwareRevisionStrategy(),
+    new FirmwareRevisionStrategy(),
+    new SoftwareRevisionStrategy(),
+    new DeviceNameStrategy(),
+    new BatteryLevelStrategy(),
+] as const;
 
 class BluetoothHelperBase<TStrategyLookup extends StrategyList> {
     private readonly lookup?: TStrategyLookup;
 
-    constructor(private logger: Logger, private readonly _lookup?: TStrategyLookup) {}
+    constructor(private logger: Logger, private readonly strategyList?: TStrategyLookup) {}
 
     /**
      * Request a bluetooth device. This will launch the browser device picking dialog for a user to choose device
@@ -96,7 +110,18 @@ class BluetoothHelperBase<TStrategyLookup extends StrategyList> {
     ): Observable<GattCharacteristic[]> {
         return this.getCharacteristicsImpl(server, service, undefined, maxRetries);
     }
+    /**
+     * subscribes to notifications for the specified characteristic
+     * @param characteristic
+     * @returns
+     */
+    public async readValue<T extends GattCharacteristicName>(
+        characteristic: GattCharacteristic<T>,
+    ): Promise<StrategyReturnType<TStrategyLookup, T>> {
+        const value = await characteristic.gatt.readValue();
 
+        return this.convertValue(characteristic, value);
+    }
     /**
      * subscribes to notifications for the specified characteristic
      * @param characteristic
@@ -108,11 +133,12 @@ class BluetoothHelperBase<TStrategyLookup extends StrategyList> {
         characteristic.gatt.startNotifications();
 
         return new Observable((observer) => {
-            function handleEvent() {
+            const handleEvent = () => {
                 if (characteristic.gatt.value != null) {
-                    observer.next(characteristic.gatt.value as any);
+                    const converted = this.convertValue(characteristic, characteristic.gatt.value);
+                    observer.next(converted);
                 }
-            }
+            };
             this.logger.info(`Starting Notifications`, characteristic);
             characteristic.gatt.addEventListener('characteristicvaluechanged', handleEvent);
 
@@ -145,6 +171,23 @@ class BluetoothHelperBase<TStrategyLookup extends StrategyList> {
                 },
             };
         });
+    }
+
+    private convertValue<T extends GattCharacteristicName>(
+        characteristic: GattCharacteristic<T>,
+        value: DataView,
+    ): StrategyReturnType<TStrategyLookup, T> {
+        console.log(`COnvert Value: ${characteristic.name}`);
+
+        const matchingStrategy = this.strategyList?.find((strategy) => strategy.canHandle(characteristic));
+
+        if (matchingStrategy != null) {
+            const converted = matchingStrategy.convert(characteristic, value);
+
+            return converted as StrategyReturnType<TStrategyLookup, T>;
+        }
+
+        return value as StrategyReturnType<TStrategyLookup, T>;
     }
 
     private requestDeviceImpl(
@@ -309,9 +352,9 @@ class BluetoothHelperBase<TStrategyLookup extends StrategyList> {
 }
 
 @Injectable()
-export class BluetoothHelper extends BluetoothHelperBase<typeof defaultStrategies> {
+export class BluetoothHelper extends BluetoothHelperBase<typeof defaultCOnversionStrategies> {
     constructor(logger: Logger) {
-        super(logger, defaultStrategies);
+        super(logger, defaultCOnversionStrategies);
     }
 }
 

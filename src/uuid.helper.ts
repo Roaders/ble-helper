@@ -24,7 +24,11 @@ export function extract16Bit(uuid: string): number {
     return parseInt(components[0], 16);
 }
 
-function lookupEnumName(uuid: number | string, lookup: Record<number, string>, description: string): string {
+function lookupEnumName(
+    uuid: number | string,
+    lookup: Record<number, string | undefined>,
+    description: string,
+): string {
     if (typeof uuid == 'string') {
         uuid = extract16Bit(uuid);
     }

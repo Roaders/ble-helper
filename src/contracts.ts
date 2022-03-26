@@ -32,10 +32,8 @@ export interface ICharacteristicConversionStrategy<
     TCharacteristic extends GattCharacteristicName = GattCharacteristicName,
     TReturnType = unknown,
 > {
-    readonly characteristicName: TCharacteristic;
-    readonly sampleValue: TReturnType;
     canHandle(characteristic: GattCharacteristic<TCharacteristic>): boolean;
-    convert(characteristic: GattCharacteristic<TCharacteristic>): TReturnType;
+    convert(characteristic: GattCharacteristic<TCharacteristic>, value: DataView): TReturnType;
 }
 
 export type StrategyList =
@@ -45,36 +43,28 @@ export type StrategyList =
 export type StrategyReturnType<
     TLookup extends StrategyList,
     T extends GattCharacteristicName,
-> = unknown extends HeadStrategyReturnTypeImpl<TLookup, T> ? DataView : HeadStrategyReturnTypeImpl<TLookup, T>;
+> = unknown extends StrategyReturnTypeImpl<TLookup, T> ? DataView : StrategyReturnTypeImpl<TLookup, T>;
 
 type TupleOrReadOnly = [any, ...any[]] | readonly [any, ...any[]];
 
-type HeadStrategyReturnTypeImpl<TLookup extends TupleOrReadOnly, T extends GattCharacteristicName> = ((
-    ...characteristicList: TLookup
-) => unknown) extends (h: ICharacteristicConversionStrategy<T, infer R>, ...ts: any[]) => unknown
-    ? R
-    : TailStrategyReturnTypeImpl<TLookup, T>; // lookup has no values
+// Removes head from list and passes it to HeadStrategyReturnTypeImpl
+type StrategyReturnTypeImpl<TStrategyList extends TupleOrReadOnly, T extends GattCharacteristicName> = ((
+    ...characteristicList: TStrategyList
+) => unknown) extends (h: infer Head, ...tt: any[]) => unknown
+    ? HeadStrategyReturnTypeImpl<Head, TStrategyList, T>
+    : unknown;
 
-type TailStrategyReturnTypeImpl<TLookup extends TupleOrReadOnly, T extends GattCharacteristicName> = ((
-    ...characteristicList: TLookup
-) => unknown) extends (h: any, th: infer TH, ...tt: infer TT) => unknown
-    ? HeadStrategyReturnTypeImpl<[TH, ...TT], T> // more values in characteristic array so call StrategyReturnType on the tail
-    : unknown; // only one item in lookup that does not match T
+// If Strategy type matches T returns that strategy, if not passes list to TailStrategyReturnTypeImpl
+type HeadStrategyReturnTypeImpl<
+    TStrategy,
+    TStrategyList extends TupleOrReadOnly,
+    T extends GattCharacteristicName,
+> = TStrategy extends ICharacteristicConversionStrategy<T, infer R> ? R : TailStrategyReturnTypeImpl<TStrategyList, T>;
 
-type strategies = [
-    ICharacteristicConversionStrategy<'Device Name', string>,
-    ICharacteristicConversionStrategy<'Manufacturer Name String', number>,
-];
-
-export type testDeviceName = HeadStrategyReturnTypeImpl<strategies, 'Device Name'>;
-export type testManufacturerName = HeadStrategyReturnTypeImpl<strategies, 'Manufacturer Name String'>;
-export type testActivityGoalName = HeadStrategyReturnTypeImpl<strategies, 'Activity Goal'>;
-
-export const defaultStrategiesTmp: [DeviceNameStrategy] = [new DeviceNameStrategy()];
-
-//export type testActivityGoalNameTwo = StrategyReturnType<typeof defaultStrategiesTmp, 'Activity Goal'>;
-
-export type StratOrNot<T> = T extends ICharacteristicConversionStrategy<any, infer R> ? R : false;
-
-export type StratInterface = StratOrNot<ICharacteristicConversionStrategy<'Device Name', number>>;
-export type StratClass = StratOrNot<DeviceNameStrategy>;
+// Removes Head from list and if a tail exists passes it to StrategyReturnTypeImpl
+type TailStrategyReturnTypeImpl<
+    TStrategyListTail extends TupleOrReadOnly,
+    T extends GattCharacteristicName,
+> = TStrategyListTail extends [any, infer TailHead, ...infer LTail]
+    ? StrategyReturnTypeImpl<[TailHead, ...LTail], T>
+    : unknown;
