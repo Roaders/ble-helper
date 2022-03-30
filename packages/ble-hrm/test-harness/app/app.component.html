@@ -1,0 +1,26 @@
+
+<div class="p-3">
+    <div>
+        <h1>BLE HRM Test Harness</h1>
+    </div>
+
+    <div>
+        <button type="button" class="btn btn-primary" (click)="connect()" [disabled]="connected">Connect</button>
+    </div>
+
+    <div *ngIf="result == null && connected">
+        Waiting for connection...
+    </div>
+
+    <div *ngIf="result != null">
+        <div class="d-flex">
+            <div class="d-inline measurement-column">Heart Rate:</div>
+            <div class="d-inline measurement-column">{{result.heartRate}}</div>
+        </div>
+        <div class="d-flex">
+            <div class="d-inline measurement-column">Time Stamp:</div>
+            <div class="d-inline measurement-column">{{result.timestamp}}</div>
+        </div>
+    </div>
+
+</div>

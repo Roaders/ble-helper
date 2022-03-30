@@ -1,9 +1,8 @@
 {
-    "name": "ble-helper",
+    "name": "ble-hrm",
     "version": "0.2.8",
-    "description": "Provides functionality to help connecting to Bluetooth devices",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
+    "description": "",
+    "main": "index.js",
     "scripts": {
         "clean": "rimraf build dist",
         "start": "ng serve --open",
@@ -15,7 +14,7 @@
         "verify-release": "concurrently --kill-others-on-fail npm:build npm:lint npm:build:test-harness",
         "prepublishOnly": "npm run clean && npm run verify-release"
     },
-    "author": "Giles Roadnight",
+    "author": "",
     "license": "ISC",
     "devDependencies": {
         "@angular-devkit/build-angular": "~13.2.6",
@@ -28,6 +27,8 @@
         "@angular/forms": "~13.2.0",
         "@angular/platform-browser": "~13.2.0",
         "@angular/platform-browser-dynamic": "~13.2.0",
+        "@types/jasmine": "~3.10.0",
+        "@types/node": "^12.11.1",
         "@types/web-bluetooth": "^0.0.13",
         "@typescript-eslint/eslint-plugin": "^5.15.0",
         "@typescript-eslint/parser": "^5.15.0",
@@ -35,28 +36,26 @@
         "concurrently": "^7.0.0",
         "eslint": "^8.11.0",
         "eslint-config-prettier": "^8.5.0",
-        "eslint-plugin-import": "^2.22.1",
+        "eslint-plugin-import": "^2.25.4",
         "eslint-plugin-node": "^11.1.0",
         "eslint-plugin-prettier": "^4.0.0",
         "eslint-plugin-promise": "^6.0.0",
+        "jasmine-core": "~4.0.0",
+        "karma": "~6.3.0",
+        "karma-chrome-launcher": "~3.1.0",
+        "karma-coverage": "~2.1.0",
+        "karma-jasmine": "~4.0.0",
+        "karma-jasmine-html-reporter": "~1.7.0",
         "prettier": "^2.2.1",
+        "reflect-metadata": "^0.1.13",
         "rimraf": "^3.0.2",
-        "rxjs": "^7.5.5",
-        "typescript": "~4.5",
-        "zone.js": "^0.11.5"
-    },
-    "peerDependencies": {
-        "rxjs": "^7.5.5"
+        "rxjs": "~7.5.0",
+        "tslib": "^2.3.0",
+        "typescript": "~4.5.2",
+        "zone.js": "~0.11.4"
     },
     "dependencies": {
-        "@morgan-stanley/needle": "^0.3.13"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/Roaders/ble-helper.git"
-    },
-    "bugs": {
-        "url": "https://github.com/Roaders/ble-helper/issues"
-    },
-    "homepage": "https://github.com/Roaders/ble-helper#readme"
+        "@morgan-stanley/needle": "^0.3.13",
+        "ble-helper": "^0.2.8"
+    }
 }
