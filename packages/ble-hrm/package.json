@@ -1,6 +1,6 @@
 {
     "name": "ble-hrm",
-    "version": "0.2.8",
+    "version": "0.2.9",
     "description": "",
     "main": "index.js",
     "scripts": {
@@ -56,6 +56,6 @@
     },
     "dependencies": {
         "@morgan-stanley/needle": "^0.3.13",
-        "ble-helper": "^0.2.8"
+        "ble-helper": "^0.2.9"
     }
 }
